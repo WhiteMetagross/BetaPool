@@ -212,7 +212,6 @@ Latency Increase & 40.9$\times$ & 29.5$\times$ \\
 \end{tabular}
 \end{table}
 
-% HINT FOR ARCHITECTURAL DIAGRAM
 \begin{figure}[htbp]
 \centerline{\includegraphics[width=\columnwidth]{../figures/fig_architecture.png}}
 \caption{System Architecture. The Metric-Driven Adaptive Thread Pool interposes a control layer between the Application and the Python Interpreter. The \textit{Instrumentor} captures fine-grained execution timing (CPU vs. Wall clock) for each task. The \textit{Monitor} aggregates these readings to compute the Blocking Ratio ($\beta$). The \textit{Controller} utilizes this signal to dynamically modulate the worker pool size, effectively isolating the application from GIL-induced thrashing.}
@@ -246,15 +245,14 @@ The system consists of three components:
 \begin{enumerate}
 \item \textbf{Instrumentor}: Records $t_{\text{CPU}}$ using time.thread\_time() and $t_{\text{wall}}$ using time.time()
 \item \textbf{Monitor}: Collects $\beta$ values every $\Delta t = 500$ ms
+\item \textbf{Controller}: Uses a decision engine to scale the thread pool with a Veto mechanism.
+\end{enumerate}
+
 \begin{figure}[htbp]
 \centerline{\includegraphics[width=\columnwidth]{../figures/fig_controller_flow.png}}
 \caption{Controller Flow Diagram. The control logic operates on a feedback loop driven by the Blocking Ratio ($\beta$). Unlike traditional queue-based scalers, the algorithm incorporates a \textit{GIL Safety Veto}. When $\beta$ falls below the critical threshold (indicating CPU saturation), the veto mechanism preempts thread allocation regardless of queue depth, preventing the system from entering the saturation cliff region.}
 \label{fig:controller_flow}
 \end{figure}
-\end{enumerate}
-
-% HINT FOR ARCHITECTURAL DIAGRAM
-% [Insert Figure 5 here: Controller Flow Diagram. A flowchart showing the decision logic: Queue Length Check → Blocking Ratio Check → Scale Up/Down/Veto Decision]
 
 \subsection{Control Algorithm}
 
