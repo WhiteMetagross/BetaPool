@@ -3,7 +3,7 @@
 **Author:** Mridankan Mandal  
 **Affiliation:** Indian Institute of Information Technology, Allahabad  
 
-**Author:** Smnit Sanjay Shende  
+**Author:** Smit Sanjay Shende  
 **Affiliation:** Indian Institute of Information Technology, Allahabad  
 
 ---
@@ -257,6 +257,8 @@ The system consists of three lightweight components running within the applicati
 
 3. **The Controller:** A decision engine that combines queue length (demand signal) with blocking ratio (safety signal) to make scaling decisions.
 
+![Figure 4: System Architecture. The Metric-Driven Adaptive Thread Pool interposes a control layer between the Application and the Python Interpreter. The Instrumentor captures fine-grained execution timing, the Monitor computes the Blocking Ratio, and the Controller modulates the worker pool size to prevent GIL-induced thrashing.](../figures/fig_architecture.png)
+
 ### 5.3 The Algorithm:
 
 ```python
@@ -278,6 +280,8 @@ def controlLoop(currentThreads, queueLength, avgBlockingRatio):
     # Scale down if idle to conserve memory.
     elif queueLength == 0:
         return max(currentThreads - 1, MIN_THREADS)
+![Figure 5: Controller Flow Diagram. The control logic operates on a feedback loop driven by the Blocking Ratio. The GIL Safety Veto mechanism preempts thread allocation when the blocking ratio indicates CPU saturation, preventing the system from entering the saturation cliff region regardless of queue depth.](../figures/fig_controller_flow.png)
+
 ```
 
 The key insight is the VETO mechanism: when the blocking ratio indicates CPU bound or GIL contended execution, the controller refuses to add threads regardless of queue pressure, preventing the system from climbing toward the cliff.

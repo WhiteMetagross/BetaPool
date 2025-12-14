@@ -21,7 +21,7 @@
 \maketitle
 
 \begin{abstract}
-Deploying Python based AI agents on resource constrained edge devices presents a concurrency paradox. High thread counts are necessary to mask the latency of Input/Output operations like sensor reads and API calls. However, the Global Interpreter Lock (GIL) in Python imposes a hard limit on compute scalability. Standard thread pool heuristics rely on queue depth or CPU saturation. These fail to detect GIL specific contention. This leads to concurrency thrashing, a state where increasing the thread count degrades throughput. In this work, we present the first systematic characterization of GIL induced performance degradation on edge devices. We identified the ``saturation cliff'' through controlled experiments on simulated single core and quad core edge environments. This is a critical threshold beyond which performance collapses. Our findings show throughput degradation from peak $37,437$ TPS at $32$ threads to $25,386$ TPS at $2048$ threads ($32.2\%$ loss) on single-core devices, and from peak $68,742$ TPS at $64$ threads to $45,821$ TPS at $2048$ threads ($33.3\%$ loss) on quad-core devices. P99 latency increases $40.9\times$ (single-core) and $29.5\times$ (quad-core) from optimal to over provisioned configurations. We demonstrate that this cliff persists on multi-core hardware due to conflicts between OS scheduling and GIL serialization, which we call the OS GIL Paradox. We propose a user space concurrency controller that uses a GIL Safety Veto mechanism. By monitoring the Blocking Ratio $\beta$ of active tasks, the controller identifies serialization and prevents the allocation of additional worker threads, effectively clamping the system to its optimal operating point. Our adaptive solution achieves $36,142$ TPS ($96.5\%$ of optimal) with P99 latency of $11.8$ ms, compared to the naive approach's $31,087$ TPS and $38.2$ ms P99 latency.
+Deploying Python based AI agents on resource constrained edge devices presents a concurrency paradox. High thread counts are necessary to mask the latency of Input/Output operations like sensor reads and API calls. However, the Global Interpreter Lock (GIL) in Python imposes a hard limit on compute scalability. Standard thread pool heuristics rely on queue depth or CPU saturation. These fail to detect GIL specific contention. This leads to concurrency thrashing, a state where increasing the thread count degrades throughput. In this work, we present the first systematic characterization of GIL induced performance degradation on edge devices. We identified the ``saturation cliff'' through controlled experiments on simulated single core and quad core edge environments. This is a critical threshold beyond which performance collapses. Our findings show throughput degradation from peak $37,437$ TPS at $32$ threads to $25,386$ TPS at $2048$ threads ($32.2\%$ loss) on single-core devices, and from peak $68,742$ TPS at $64$ threads to $45,821$ TPS at $2048$ threads ($33.3\%$ loss) on quad-core devices. P99 latency increases $40.9\times$ (single-core) and $29.5\times$ (quad-core) from optimal to over provisioned configurations. We demonstrate that this cliff persists on multi-core hardware due to conflicts between OS scheduling and GIL serialization, which we call the OS GIL Paradox. We propose a user space concurrency controller that uses a GIL Safety Veto mechanism. By monitoring the Blocking Ratio $\beta$ of active tasks, the controller identifies serialization and prevents the allocation of additional worker threads, effectively clamping the system to its optimal operating point. Our adaptive solution achieves $36,142$ TPS ($96.5\%$ of the optimal) with P99 latency of $11.8$ ms, compared to the naive approach's $31,087$ TPS and $38.2$ ms P99 latency.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -212,9 +212,10 @@ Latency Increase & 40.9$\times$ & 29.5$\times$ \\
 \end{tabular}
 \end{table}
 
+% HINT FOR ARCHITECTURAL DIAGRAM
 \begin{figure}[htbp]
-\centerline{\includegraphics[width=0.95\columnwidth]{../figures/fig_architecture.pdf}}
-\caption{System Architecture. Three tier flow from Application Layer to Adaptive Thread Pool Controller (Instrumentor, Monitor, Controller), then to Worker Threads, finally the Python Interpreter with the GIL.}
+\centerline{\includegraphics[width=\columnwidth]{../figures/fig_architecture.png}}
+\caption{System Architecture. The Metric-Driven Adaptive Thread Pool interposes a control layer between the Application and the Python Interpreter. The \textit{Instrumentor} captures fine-grained execution timing (CPU vs. Wall clock) for each task. The \textit{Monitor} aggregates these readings to compute the Blocking Ratio ($\beta$). The \textit{Controller} utilizes this signal to dynamically modulate the worker pool size, effectively isolating the application from GIL-induced thrashing.}
 \label{fig:architecture}
 \end{figure}
 
@@ -245,14 +246,15 @@ The system consists of three components:
 \begin{enumerate}
 \item \textbf{Instrumentor}: Records $t_{\text{CPU}}$ using time.thread\_time() and $t_{\text{wall}}$ using time.time()
 \item \textbf{Monitor}: Collects $\beta$ values every $\Delta t = 500$ ms
-\item \textbf{Controller}: Uses a decision engine to scale the thread pool with a Veto mechanism.
-\end{enumerate}
-
 \begin{figure}[htbp]
-\centerline{\includegraphics[width=0.95\columnwidth]{../figures/fig_controller_flow.pdf}}
-\caption{Controller Flow Diagram. Decision logic for the adaptive thread pool: queue length check, blocking ratio check, and scale up/down with Veto to avoid the saturation cliff.}
+\centerline{\includegraphics[width=\columnwidth]{../figures/fig_controller_flow.png}}
+\caption{Controller Flow Diagram. The control logic operates on a feedback loop driven by the Blocking Ratio ($\beta$). Unlike traditional queue-based scalers, the algorithm incorporates a \textit{GIL Safety Veto}. When $\beta$ falls below the critical threshold (indicating CPU saturation), the veto mechanism preempts thread allocation regardless of queue depth, preventing the system from entering the saturation cliff region.}
 \label{fig:controller_flow}
 \end{figure}
+\end{enumerate}
+
+% HINT FOR ARCHITECTURAL DIAGRAM
+% [Insert Figure 5 here: Controller Flow Diagram. A flowchart showing the decision logic: Queue Length Check → Blocking Ratio Check → Scale Up/Down/Veto Decision]
 
 \subsection{Control Algorithm}
 
