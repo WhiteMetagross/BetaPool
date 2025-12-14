@@ -1,0 +1,6 @@
+GIL Saturation Cliff Experiment Summary
+==================================================
+
+Peak: 37,437 TPS at 32 threads
+Final: 25,386 TPS at 2048 threads
+Cliff Severity: 32.2%

@@ -1,0 +1,29 @@
+# Dockerfile for Quad Core Edge Device Simulation.
+# Constrains execution to 4 CPU cores to simulate Raspberry Pi 4 or Jetson Nano.
+
+FROM python:3.10-slim
+
+LABEL maintainer="Mridankan Mandal"
+LABEL description="Quad Core Edge Device Simulation (Pi 4 / Jetson Nano)"
+LABEL version="1.0"
+
+WORKDIR /app
+
+# Install minimal dependencies.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY src/ ./src/
+COPY experiments/ ./experiments/
+
+RUN mkdir -p results figures
+
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+# Run quad core benchmark.
+CMD ["python", "experiments/quadCoreBenchmark.py"]

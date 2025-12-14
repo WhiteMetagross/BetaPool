@@ -1,0 +1,65 @@
+# Docker Compose for GIL Saturation Cliff Experiments.
+# Provides reproducible environments for single core and quad core simulations.
+
+version: "3.8"
+
+services:
+  # Single core edge device simulation.
+  singlecore:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.singleCore
+    cpus: "1.0"
+    mem_limit: 512m
+    volumes:
+      - ../results:/app/results
+      - ../figures:/app/figures
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python experiments/singleCoreBenchmark.py
+
+  # Quad core edge device simulation (Raspberry Pi 4 / Jetson Nano).
+  quadcore:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.quadCore
+    cpus: "4.0"
+    mem_limit: 2g
+    volumes:
+      - ../results:/app/results
+      - ../figures:/app/figures
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python experiments/quadCoreBenchmark.py
+
+  # Figure generation service.
+  figures:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ../results:/app/results
+      - ../figures:/app/figures
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python experiments/generateFigures.py
+    depends_on:
+      - singlecore
+      - quadcore
+
+  # Run all experiments in sequence.
+  all:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    cpus: "4.0"
+    mem_limit: 2g
+    volumes:
+      - ../results:/app/results
+      - ../figures:/app/figures
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: >
+      sh -c "python experiments/singleCoreBenchmark.py && 
+             python experiments/quadCoreBenchmark.py && 
+             python experiments/generateFigures.py"
