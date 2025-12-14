@@ -161,7 +161,7 @@ def main():
     ax.set_xlabel("Thread Count")
     ax.set_ylabel("Throughput (tasks/sec)")
     ax.set_title("(a) Single-Core Edge Device", fontweight="bold", fontsize=10)
-    ax.legend(loc="lower right", fontsize=7)
+    ax.legend(loc="upper left", fontsize=7)
     ax.set_ylim(bottom=0)
     
     # Cliff annotation.
@@ -192,7 +192,7 @@ def main():
     ax.set_xlabel("Thread Count")
     ax.set_ylabel("Throughput (tasks/sec)")
     ax.set_title("(b) Quad-Core (Raspberry Pi 4)", fontweight="bold", fontsize=10)
-    ax.legend(loc="lower right", fontsize=7)
+    ax.legend(loc="upper left", fontsize=7)
     ax.set_ylim(bottom=0)
     
     cliffPct = (max(quadMixed["tps"]) - quadMixed["tps"][-1]) / max(quadMixed["tps"]) * 100
@@ -342,7 +342,7 @@ def main():
         Line2D([0], [0], marker="s", color="w", markerfacecolor=COLORS["informed"], markersize=8, label="Informed"),
         Line2D([0], [0], marker="^", color="w", markerfacecolor=COLORS["adaptive"], markersize=8, label="Adaptive"),
     ]
-    ax.legend(handles=legendElements, loc="upper right", fontsize=7)
+    ax.legend(handles=legendElements, loc="lower left", fontsize=7)
     
     plt.tight_layout()
     plt.savefig("figures/fig4_solution_comparison.pdf", bbox_inches="tight")

@@ -2,8 +2,9 @@
 
 **Author:** Mridankan Mandal  
 **Affiliation:** Indian Institute of Information Technology, Allahabad  
-**Target Venue:** EdgeSys 2026 (EuroSys Workshop)  
-**Paper Type:** Research Paper
+
+**Author:** Smnit Sanjay Shende  
+**Affiliation:** Indian Institute of Information Technology, Allahabad  
 
 ---
 
