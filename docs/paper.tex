@@ -166,7 +166,7 @@ To validate that the GIL is indeed the bottleneck, we ran a pure I/O workload (n
 This control experiment demonstrates that when threads genuinely release the GIL (pure I/O), throughput scales linearly with thread count. The saturation cliff only appears when CPU computation creates GIL contention.
 
 \begin{figure}[htbp]
-\centerline{\includegraphics[width=\columnwidth]{../figures/fig1_saturation_cliff.pdf}}
+\centerline{\includegraphics[width=\columnwidth]{fig1_saturation_cliff.png}}
 \caption{The Saturation Cliff. Panel (a) shows Single-Core throughput vs threads curve with a drop at high threads. Panel (b) shows Quad-Core throughput vs threads with a similar drop. The I/O baseline scales linearly, confirming GIL contention.}
 \label{fig:saturation_cliff}
 \end{figure}
@@ -178,13 +178,13 @@ On a quad-core system with $N = 100$ threads, the OS sees idle cores and wakes u
 \end{equation}
 
 \begin{figure}[htbp]
-\centerline{\includegraphics[width=\columnwidth]{../figures/fig2_latency_analysis.pdf}}
+\centerline{\includegraphics[width=\columnwidth]{fig2_latency_analysis.png}}
 \caption{Latency Analysis. P99 latency explodes as thread count increases beyond the optimal point, demonstrating the cost of contention.}
 \label{fig:latency_analysis}
 \end{figure}
 
 \begin{figure}[htbp]
-\centerline{\includegraphics[width=\columnwidth]{../figures/fig3_efficiency.pdf}}
+\centerline{\includegraphics[width=\columnwidth]{fig3_efficiency.png}}
 \caption{Per Thread Efficiency. A logarithmic plot showing TPS per thread decreasing as thread count increases, indicating diminishing returns.}
 \label{fig:efficiency}
 \end{figure}
@@ -212,8 +212,11 @@ Latency Increase & 40.9$\times$ & 29.5$\times$ \\
 \end{tabular}
 \end{table}
 
-% HINT FOR ARCHITECTURAL DIAGRAM
-% [Insert Figure 4 here: System Architecture. A diagram showing the three-tier architecture: Application Layer → Adaptive Thread Pool Controller (with Instrumentor, Monitor, and Controller components) → Worker Threads → Python Interpreter with GIL]
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.95\columnwidth]{../figures/fig_architecture.pdf}}
+\caption{System Architecture. Three tier flow from Application Layer to Adaptive Thread Pool Controller (Instrumentor, Monitor, Controller), then to Worker Threads, finally the Python Interpreter with the GIL.}
+\label{fig:architecture}
+\end{figure}
 
 \section{Proposed Solution: Metric Driven Adaptive Thread Pool}
 
@@ -245,8 +248,11 @@ The system consists of three components:
 \item \textbf{Controller}: Uses a decision engine to scale the thread pool with a Veto mechanism.
 \end{enumerate}
 
-% HINT FOR ARCHITECTURAL DIAGRAM
-% [Insert Figure 5 here: Controller Flow Diagram. A flowchart showing the decision logic: Queue Length Check → Blocking Ratio Check → Scale Up/Down/Veto Decision]
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.95\columnwidth]{../figures/fig_controller_flow.pdf}}
+\caption{Controller Flow Diagram. Decision logic for the adaptive thread pool: queue length check, blocking ratio check, and scale up/down with Veto to avoid the saturation cliff.}
+\label{fig:controller_flow}
+\end{figure}
 
 \subsection{Control Algorithm}
 
@@ -338,13 +344,13 @@ Adaptive       & 0.74 & 48 (dynamic) & 23 \\
 The Static Naive configuration operates in a GIL contended regime with $\bar{\beta} = 0.21 < 0.3$, indicating heavy CPU/GIL saturation. The Adaptive controller maintains $\bar{\beta} = 0.74$, successfully keeping the system in the I/O bound regime. During the experiment, the controller issued $23$ veto decisions, preventing allocation of threads that would have pushed the system over the cliff.
 
 \begin{figure}[htbp]
-\centerline{\includegraphics[width=\columnwidth]{../figures/fig4_solution_comparison.pdf}}
+\centerline{\includegraphics[width=\columnwidth]{fig4_solution_comparison.png}}
 \caption{Solution Comparison. Comparing the throughput and latency of Naive, Optimal, and Adaptive strategies. The Adaptive strategy approaches optimal performance.}
 \label{fig:solution_comparison}
 \end{figure}
 
 \begin{figure}[htbp]
-\centerline{\includegraphics[width=\columnwidth]{../figures/fig5_combined_panel.pdf}}
+\centerline{\includegraphics[width=\columnwidth]{fig5_combined_panel.png}}
 \caption{Combined Panel. A summary figure containing the saturation cliff, latency explosion, and strategy comparison panels.}
 \label{fig:combined_panel}
 \end{figure}

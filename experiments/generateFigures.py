@@ -450,6 +450,102 @@ def main():
     print()
     print("All figures saved to figures/ directory.")
 
+    # Architecture Figures (static, not derived from CSVs).
+    print("Generating Architecture Figures.")
+    _generate_system_architecture()
+    _generate_controller_flow()
+    print("  Saved figures/fig_architecture.pdf and figures/fig_controller_flow.pdf.")
+
+
+# ---------------------------------------------------------------------------
+# Architecture diagrams (static). Keeping here ensures a single entry point
+# for regenerating all figures used in the paper.
+# ---------------------------------------------------------------------------
+
+def _add_box(ax, xy, width, height, label, facecolor="#f7f7f7", edgecolor="#333333", fontsize=8, weight="bold"):
+    rect = plt.Rectangle(xy, width, height, linewidth=1, edgecolor=edgecolor,
+                         facecolor=facecolor, zorder=2)
+    ax.add_patch(rect)
+    ax.text(xy[0] + width / 2, xy[1] + height / 2, label,
+            ha="center", va="center", fontsize=fontsize, fontweight=weight, zorder=3)
+    return rect
+
+
+def _add_arrow(ax, start, end, text=None, offset=(0, 0), fontsize=8):
+    arrow = plt.Arrow(start[0], start[1], end[0] - start[0], end[1] - start[1],
+                      width=0.2, color="#444444", zorder=1)
+    ax.add_patch(arrow)
+    if text:
+        ax.text((start[0] + end[0]) / 2 + offset[0], (start[1] + end[1]) / 2 + offset[1],
+                text, ha="center", va="center", fontsize=fontsize)
+
+
+def _generate_system_architecture():
+    fig, ax = plt.subplots(figsize=(7, 2.4))
+    ax.axis("off")
+    ax.set_xlim(0, 14)
+    ax.set_ylim(0, 6)
+
+    # Layers
+    app = _add_box(ax, (0.5, 2.5), 2.5, 1.5, "Application\nLayer", facecolor="#e6f2ff")
+    ctrl = _add_box(ax, (4.0, 1.5), 4.5, 3.5, "Adaptive Thread Pool\nController", facecolor="#f2e8ff")
+    workers = _add_box(ax, (9.5, 2.5), 2.2, 1.5, "Worker\nThreads", facecolor="#e8f8f2")
+    interp = _add_box(ax, (12.5, 2.5), 1.8, 1.5, "Python\nInterpreter\n(GIL)", facecolor="#ffe9e6")
+
+    # Controller internals
+    _add_box(ax, (4.3, 4.25), 1.5, 0.6, "Instrumentor", facecolor="#ffffff", fontsize=7, weight="normal")
+    _add_box(ax, (6.05, 4.25), 1.5, 0.6, "Monitor", facecolor="#ffffff", fontsize=7, weight="normal")
+    _add_box(ax, (4.3, 3.4), 3.25, 0.6, "Controller (Veto + Scaling)", facecolor="#ffffff", fontsize=7, weight="normal")
+    _add_box(ax, (4.3, 2.2), 3.25, 0.6, "Metrics: queue length, \nblocking ratio \u03b2", facecolor="#ffffff", fontsize=6, weight="normal")
+
+    # Data/control flow arrows
+    _add_arrow(ax, (3.0, 3.25), (4.0, 3.25), text="Task submit", offset=(0, 0.4))
+    _add_arrow(ax, (8.5, 3.25), (9.5, 3.25), text="Scheduled tasks", offset=(0, 0.4))
+    _add_arrow(ax, (11.7, 3.25), (12.5, 3.25), text="Bytecode exec", offset=(0, 0.4))
+    _add_arrow(ax, (5.05, 4.25), (5.05, 3.4))
+    _add_arrow(ax, (6.8, 4.25), (6.8, 3.4))
+    _add_arrow(ax, (5.9, 2.8), (5.9, 2.2))
+
+    plt.tight_layout()
+    plt.savefig("figures/fig_architecture.pdf", bbox_inches="tight")
+    plt.savefig("figures/fig_architecture.png", bbox_inches="tight")
+    plt.close(fig)
+
+
+def _generate_controller_flow():
+    fig, ax = plt.subplots(figsize=(7, 3.5))
+    ax.axis("off")
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, 10)
+
+    # Nodes
+    start = _add_box(ax, (1, 8.2), 1.6, 0.8, "Start", facecolor="#e6f2ff")
+    queue = _add_box(ax, (1, 6.2), 3.0, 1.2, "Queue length > 0?", facecolor="#ffffff", weight="normal")
+    beta = _add_box(ax, (6, 6.2), 3.0, 1.2, "Blocking ratio \u03b2 > \nthreshold?", facecolor="#ffffff", weight="normal")
+    scale_up = _add_box(ax, (6, 4.0), 2.5, 1.0, "Scale up\n(add worker)", facecolor="#e8f8f2", weight="normal")
+    veto = _add_box(ax, (6, 2.1), 2.5, 1.0, "VETO\n(no scale)", facecolor="#ffe9e6", weight="normal")
+    idle = _add_box(ax, (1, 4.0), 2.8, 1.0, "Scale down\n(if idle)", facecolor="#f2e8ff", weight="normal")
+    loop = _add_box(ax, (3.5, 0.6), 3.0, 1.0, "Sleep \u0394t and\nre-evaluate", facecolor="#ffffff", weight="normal")
+
+    # Arrows and labels
+    _add_arrow(ax, (1.8, 8.2), (1.8, 7.4))  # start -> queue
+    _add_arrow(ax, (4.0, 6.8), (6.0, 6.8), text="Yes", offset=(0, 0.4))  # queue yes -> beta
+    _add_arrow(ax, (2.6, 6.2), (2.6, 5.0), text="No", offset=(-0.5, 0))  # queue no
+    _add_arrow(ax, (2.6, 5.0), (2.6, 4.0))  # to idle
+    _add_arrow(ax, (7.5, 6.2), (7.5, 5.0), text="Yes")  # beta yes -> scale up
+    _add_arrow(ax, (7.5, 6.2), (7.5, 3.1), text="No", offset=(0.5, -0.2))  # beta no -> veto
+    _add_arrow(ax, (2.6, 4.0), (2.6, 1.6))  # idle -> loop merge
+    _add_arrow(ax, (7.5, 4.0), (7.5, 1.6))  # scale up -> loop merge
+    _add_arrow(ax, (7.5, 2.1), (7.5, 1.6))  # veto -> loop merge
+    _add_arrow(ax, (7.5, 1.6), (5.0, 1.6))  # horizontal to loop
+    _add_arrow(ax, (5.0, 1.6), (5.0, 1.0))  # into loop box
+    _add_arrow(ax, (5.0, 0.6), (5.0, 6.2), text="Loop", offset=(0.6, 2.8))  # loop back to queue
+
+    plt.tight_layout()
+    plt.savefig("figures/fig_controller_flow.pdf", bbox_inches="tight")
+    plt.savefig("figures/fig_controller_flow.png", bbox_inches="tight")
+    plt.close(fig)
+
 
 if __name__ == "__main__":
     main()
