@@ -1,12 +1,6 @@
-# Mitigating GIL-Induced Concurrency Thrashing in Edge AI Systems:
+# Mitigating GIL Bottlenecks in Edge AI Systems:
 
-**Author:** Mridankan Mandal  
-**Affiliation:** Indian Institute of Information Technology, Allahabad  
-
-**Author:** Smit Sanjay Shende  
-**Affiliation:** Indian Institute of Information Technology, Allahabad  
-
----
+**Author:** Anonymous Authors
 
 ## Abstract:
 
@@ -22,7 +16,6 @@ Critically, we demonstrate that the cliff persists on multi core edge hardware d
 
 **Keywords:** Python, GIL, Edge Computing, Concurrency, Thread Pool, IoT, Raspberry Pi, Adaptive Systems
 
----
 
 ## 1. Introduction:
 
@@ -85,7 +78,6 @@ In support of these novelties, we contribute:
 
 4. **Comprehensive Evaluation (Section 6):** We demonstrate that our adaptive solution maintains near-optimal throughput while reducing tail latency by an order of magnitude compared to naive over-provisioning strategies.
 
----
 
 ## 2. Background and Related Work:
 
@@ -170,7 +162,6 @@ We argue that our contributions remain relevant for three reasons:
 
 3. **Legacy Deployment:** Edge devices often run LTS distributions with older Python versions. The installed base of GIL bound Python interpreters will persist for a decade or more.
 
----
 
 ## 3. Methodology:
 
@@ -199,7 +190,6 @@ We employ a synthetic Mixed Workload representing an AI agent pipeline with the 
 
 We evaluate thread counts from 1 to 2048 in powers of two. This extreme range (up to 2048) represents the naive configuration often found in production web servers where developers set high limits to handle bursty traffic without understanding GIL implications.
 
----
 
 ## 4. The OS GIL Paradox:
 
@@ -223,7 +213,6 @@ On a quad core system with 100 threads:
 
 ![Figure 3: Per Thread Efficiency. Efficiency (TPS per thread) degrades logarithmically, indicating severe resource waste at high thread counts.](../figures/fig3_efficiency.png)
 
----
 
 ## 5. Proposed Solution: Metric-Driven Adaptive Thread Pool:
 
@@ -263,21 +252,21 @@ The system consists of three lightweight components running within the applicati
 
 ```python
 def controlLoop(currentThreads, queueLength, avgBlockingRatio):
-    # Thresholds tuned for edge hardware.
+    # Thresholds tuned for edge hardware.:
     GIL_DANGER_ZONE = 0.3  # If less than 30% I/O, we are fighting for CPU.
     
-    # Check demand: do we have a backlog.
+    # Check demand: do we have a backlog.:
     if queueLength > 0:
-        # Check safety: is the CPU actually free, or just thrashing.
+        # Check safety: is the CPU actually free, or just thrashing.:
         if avgBlockingRatio > GIL_DANGER_ZONE:
-            # We are waiting on I/O. Safe to scale up.
+            # We are waiting on I/O. Safe to scale up.:
             return currentThreads + 1
         else:
-            # We are CPU or GIL bound. Adding threads triggers the cliff.
-            # VETO the scale-up decision.
+            # We are CPU or GIL bound. Adding threads triggers the cliff.:
+            # VETO the scale-up decision.:
             return currentThreads
 
-    # Scale down if idle to conserve memory.
+    # Scale down if idle to conserve memory.:
     elif queueLength == 0:
         return max(currentThreads - 1, MIN_THREADS)
 ![Figure 5: Controller Flow Diagram. The control logic operates on a feedback loop driven by the Blocking Ratio. The GIL Safety Veto mechanism preempts thread allocation when the blocking ratio indicates CPU saturation, preventing the system from entering the saturation cliff region regardless of queue depth.](../figures/fig_controller_flow.png)
@@ -286,7 +275,6 @@ def controlLoop(currentThreads, queueLength, avgBlockingRatio):
 
 The key insight is the VETO mechanism: when the blocking ratio indicates CPU bound or GIL contended execution, the controller refuses to add threads regardless of queue pressure, preventing the system from climbing toward the cliff.
 
----
 
 ## 6. Evaluation:
 
@@ -312,7 +300,6 @@ The adaptive solution achieves 95% of optimal performance without requiring manu
 
 ![Figure 5: Combined Panel. Four panel summary showing (a) single core cliff, (b) quad core cliff, (c) latency explosion, and (d) strategy comparison. This figure is suitable for paper submission.](../figures/fig5_combined_panel.png)
 
----
 
 ## 7. Discussion and Future Work:
 
@@ -328,7 +315,6 @@ While our experiments focus on edge devices, the blocking ratio metric and adapt
 
 As the Python ecosystem migrates to free-threaded builds, our work provides a foundation for understanding the transition. The blocking ratio metric remains useful for detecting oversubscription even in the absence of GIL contention.
 
----
 
 ## 8. Conclusion:
 
@@ -336,7 +322,6 @@ We have presented the first systematic characterization of GIL induced concurren
 
 Our solution requires no kernel modification, no Python interpreter changes, and no application code restructuring. It represents a practical, immediately deployable improvement for the millions of Python-based edge AI systems currently in production.
 
----
 
 ## References:
 
@@ -356,7 +341,6 @@ Our solution requires no kernel modification, no Python interpreter changes, and
 
 [8] Wang, L., et al. (2014). An Empirical Study of Python Threading Performance. ISPASS 2014.
 
----
 
 ## Appendix A: Reproducibility:
 

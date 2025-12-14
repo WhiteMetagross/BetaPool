@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# Publication Figure Generator for Edge GIL Paper.
-# Generates all publication quality figures from experimental data.
-# Output conforms to IEEE/ACM style guidelines.
+# This script generates the figures for our Edge GIL paper.
+# It takes the experimental data and creates high quality plots.
+# The output follows standard academic style guidelines.
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -20,7 +20,7 @@ random.seed(SEED)
 # Use non interactive backend for server environments.
 matplotlib.use("Agg")
 
-# IEEE/ACM publication style configuration.
+# Publication style configuration.
 plt.rcParams.update({
     "font.size": 9,
     "font.family": "serif",
@@ -459,10 +459,8 @@ def main():
     print("  Saved figures/fig_architecture.pdf and figures/fig_controller_flow.pdf.")
 
 
-# ---------------------------------------------------------------------------
-# Architecture diagrams (static). Publication quality using matplotlib.
-# Designed for IEEE/ACM conference proceedings.
-# ---------------------------------------------------------------------------
+# These functions generate the static architecture diagrams.
+# We use matplotlib to create professional looking charts.
 
 def _generate_system_architecture():
     """
@@ -475,7 +473,7 @@ def _generate_system_architecture():
     ax.set_aspect('equal')
     ax.axis('off')
     
-    # Professional color palette (IEEE style)
+    # Professional color palette
     colors = {
         'app': '#4472C4',        # Blue
         'controller': '#7030A0', # Purple  

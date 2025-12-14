@@ -19,7 +19,7 @@ from src.adaptive_executor import AdaptiveThreadPoolExecutor, StaticThreadPoolEx
 
 @dataclass
 class RagConfig:
-    """Configuration for the RAG pipeline simulation."""
+    # Configuration for the RAG pipeline simulation.
     # Latency parameters (in milliseconds)
     networkLatencyMs: float = 10.0
     vectorDbLatencyMs: float = 200.0
@@ -40,7 +40,7 @@ class RagConfig:
 
 @dataclass
 class RequestMetrics:
-    """Metrics for a single RAG request."""
+    # Metrics for a single RAG request.
     requestId: int
     totalLatencyMs: float
     networkLatencyMs: float

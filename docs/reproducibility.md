@@ -29,7 +29,7 @@ cd edge-gil
 
 python -m venv venv
 source venv/bin/activate  # Linux/macOS/WSL.
-# venv\Scripts\activate    # Windows.
+# venv\Scripts\activate    # Windows.:
 
 pip install -r requirements.txt
 ```
@@ -82,16 +82,16 @@ For reproducible results on any platform, use Docker:
 ```bash
 cd docker
 
-# Build all images.
+# Build all images.:
 docker-compose build
 
-# Run single-core experiment.
+# Run single-core experiment.:
 docker-compose up single-core
 
-# Run quad-core experiment.
+# Run quad-core experiment.:
 docker-compose up quad-core
 
-# Run both experiments.
+# Run both experiments.:
 docker-compose up
 ```
 
@@ -107,10 +107,10 @@ The Docker containers use CPU constraints to simulate edge devices:
 ### Raspberry Pi 4:
 
 ```bash
-# Transfer code to Pi.
+# Transfer code to Pi.:
 scp -r edge-gil/ pi@raspberrypi:~/
 
-# SSH and run.
+# SSH and run.:
 ssh pi@raspberrypi
 cd edge-gil
 pip3 install -r requirements.txt
@@ -120,10 +120,10 @@ python3 platforms/raspberryPiBenchmark.py
 ### NVIDIA Jetson Nano:
 
 ```bash
-# Transfer code to Jetson.
+# Transfer code to Jetson.:
 scp -r edge-gil/ jetson@jetson-nano:~/
 
-# SSH and run.
+# SSH and run.:
 ssh jetson@jetson-nano
 cd edge-gil
 pip3 install -r requirements.txt
@@ -202,7 +202,6 @@ If you use this code in your research, please cite:
 @inproceedings{edge-gil-2026,
   title={Edge-GIL: Mitigating GIL-Induced Concurrency Thrashing in Edge AI Systems},
   author={[Authors]},
-  booktitle={Proceedings of EdgeSys 2026},
   year={2026}
 }
 ```

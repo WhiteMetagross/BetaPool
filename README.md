@@ -1,33 +1,16 @@
-# Edge GIL: Mitigating GIL Induced Concurrency Thrashing in Edge AI Systems:
+# Mitigating GIL Bottlenecks in Edge AI Systems:
 
-A research project characterizing and mitigating the GIL Saturation Cliff phenomenon in Python based edge AI systems.
+**Author:** Anonymous Authors
 
-## Overview:
+## Abstract:
 
-This repository provides experimental evidence of the **GIL Saturation Cliff**, a phenomenon where Python thread pool throughput crashes by 30 to 40% at high thread counts due to Global Interpreter Lock contention.
-
-**Author:** Mridankan Mandal  
-**Affiliation:** Indian Institute of Information Technology, Allahabad  
-**Target Venue:** EdgeSys 2026 (EuroSys Workshop).
-
-## The Problem:
-
-Python uses a **Global Interpreter Lock (GIL)** that allows only one thread to execute Python bytecode at a time. When thread counts increase beyond optimal levels:
-
-1. **Low thread counts (1-32):** Threads coordinate efficiently, and throughput scales.
-2. **High thread counts (128+):** Threads compete aggressively for the lock, spending more time waiting than working. **Throughput crashes.**
-
-This is the **Saturation Cliff**.
+Deploying Python based AI agents on resource constrained edge devices presents a concurrency paradox. High thread counts are necessary to mask the latency of Input/Output operations like sensor reads and API calls. However, the Global Interpreter Lock (GIL) in Python imposes a hard limit on compute scalability. Standard thread pool heuristics rely on queue depth or CPU saturation. These fail to detect GIL specific contention. This leads to concurrency thrashing, a state where increasing the thread count degrades throughput. In this work, we present the first systematic characterization of GIL induced performance degradation on edge devices. We identified the "saturation cliff" through controlled experiments on simulated single core and quad core edge environments. This is a critical threshold beyond which performance collapses. Our findings show throughput degradation from peak 37,437 TPS at 32 threads to 25,386 TPS at 2048 threads (32.2% loss) on single-core devices, and from peak 68,742 TPS at 64 threads to 45,821 TPS at 2048 threads (33.3% loss) on quad-core devices. P99 latency increases 40.9x (single-core) and 29.5x (quad-core) from optimal to over provisioned configurations. We demonstrate that this cliff persists on multi-core hardware due to conflicts between OS scheduling and GIL serialization, which we call the OS GIL Paradox. We propose a user space concurrency controller that uses a GIL Safety Veto mechanism. By monitoring the Blocking Ratio beta of active tasks, the controller identifies serialization and prevents the allocation of additional worker threads, effectively clamping the system to its optimal operating point. Our adaptive solution achieves 36,142 TPS (96.5% of the optimal) with P99 latency of 11.8 ms, compared to the naive approach's 31,087 TPS and 38.2 ms P99 latency.
 
 ## Key Results:
 
-| Threads | Throughput (TPS) | Drop from Peak |
-|---------|------------------|----------------|
-| 32      | 39,658           | Peak (0%)      |
-| 128     | 36,965           | -6.8%          |
-| 512     | 35,862           | -9.6%          |
-| 1024    | 28,701           | -27.6%         |
-| 2048    | 24,043           | -39.4%         |
+- **Single core devices:** 32.2% throughput loss at 2048 threads (peak at 32 threads).
+- **Quad core devices:** 33.3% throughput loss at 2048 threads (peak at 64 threads).
+- **Latency explosion:** P99 latency increases 40.9x (single-core) and 29.5x (quad-core).
 
 ## Project Structure:
 
@@ -40,84 +23,12 @@ MandalSchedulingResearchAlgorithm/
 ├── experiments/                 # Experiment scripts.
 │   ├── singleCoreBenchmark.py   # Single core cliff characterization.
 │   ├── quadCoreBenchmark.py     # Quad core edge device benchmark.
+│   ├── instrumentationOverhead.py # Timer overhead measurement.
+│   ├── workloadSweep.py         # CPU/IO ratio sweep.
+│   ├── baselineComparison.py    # Alternative strategy comparison.
+│   ├── controllerTimeline.py    # Controller behavior recording.
 │   └── generateFigures.py       # Publication figure generation.
 ├── platforms/                   # Platform specific benchmarks.
 │   ├── raspberryPiBenchmark.py  # Raspberry Pi 4 native benchmark.
-│   └── jetsonNanoBenchmark.py   # NVIDIA Jetson Nano benchmark.
-├── docker/                      # Docker configurations.
-│   ├── Dockerfile               # Base image.
-│   ├── Dockerfile.singleCore    # Single core simulation.
-│   ├── Dockerfile.quadCore      # Quad core simulation.
-│   └── docker-compose.yml       # Container orchestration.
-├── docs/                        # Documentation.
-│   ├── paper.md                 # Research paper draft.
-│   └── reproducibility.md       # Reproducibility guide.
-├── src/                         # Core implementation.
-│   ├── adaptiveExecutor.py      # Adaptive thread pool.
-│   ├── metrics.py               # Blocking ratio metrics.
-│   └── workloads.py             # Workload generators.
-├── tests/                       # Unit tests.
-│   └── testAdaptiveExecutor.py  # Executor tests.
-├── results/                     # Experimental data (CSV).
-└── figures/                     # Generated figures (PDF/PNG).
+│   ├── jetsonNanoBenchmark.py   # NVIDIA Jetson Nano benchmark.
 ```
-
-## Quick Start:
-
-### Prerequisites:
-
-```bash
-pip install -r requirements.txt
-```
-
-### Run Single Core Experiment:
-
-```bash
-python experiments/singleCoreBenchmark.py
-```
-
-### Run Quad Core Experiment:
-
-```bash
-python experiments/quadCoreBenchmark.py
-```
-
-### Generate Publication Figures:
-
-```bash
-python experiments/generateFigures.py
-```
-
-### Docker Experiments:
-
-```bash
-cd docker
-docker-compose up --build
-```
-
-## The Solution:
-
-The **Blocking Ratio Metric** enables runtime detection of workload characteristics:
-
-```
-beta = 1 - (cpu_time / wall_time)
-```
-
-- **beta near 0:** CPU bound workload. Keep threads low to avoid GIL contention.
-- **beta near 1:** I/O bound workload. Scale threads up for parallel waiting.
-
-The `AdaptiveThreadPoolExecutor` uses Hill Climbing optimization to find the optimal thread count dynamically.
-
-## Target Platforms:
-
-- **Raspberry Pi 4:** ARM Cortex A72, 4 cores.
-- **NVIDIA Jetson Nano:** ARM Cortex A57, 4 cores with GPU.
-- **Docker containers:** CPU constrained simulation on any platform.
-
-## Documentation:
-
-See [Usage.md](Usage.md) for detailed instructions and [CodeBaseIndex.md](CodeBaseIndex.md) for codebase navigation.
-
-## License:
-
-Research code for academic purposes.

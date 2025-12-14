@@ -12,16 +12,12 @@ import statistics
 
 @dataclass
 class TaskMetrics:
-    """
-    Container for individual task execution metrics.
-    
-    The blocking ratio is computed as the fraction of wall time spent
-    waiting (I/O, locks, sleep) rather than executing on CPU:
-        beta = 1.0 - (cpu_time / wall_time)
-    
-    A blocking ratio near 1.0 indicates I/O-bound behavior.
-    A blocking ratio near 0.0 indicates CPU-bound behavior.
-    """
+    # Container for individual task execution metrics.
+    # The blocking ratio is computed as the fraction of wall time spent
+    # waiting (I/O, locks, sleep) rather than executing on CPU:
+    #     beta = 1.0 - (cpu_time / wall_time)
+    # A blocking ratio near 1.0 indicates I/O-bound behavior.
+    # A blocking ratio near 0.0 indicates CPU-bound behavior.
     taskId: str
     wallTime: float  # Total elapsed time in seconds
     cpuTime: float   # Thread CPU time in seconds
@@ -37,9 +33,7 @@ class TaskMetrics:
 
 @dataclass
 class AggregatedMetrics:
-    """
-    Aggregated metrics over a time window for controller decisions.
-    """
+    # Aggregated metrics over a time window for controller decisions.
     windowStart: float
     windowEnd: float
     taskCount: int

@@ -10,27 +10,17 @@ import numpy as np
 
 
 class WorkloadGenerator:
-    """
-    Factory for generating different types of workloads.
-    
-    Provides methods to create I/O-bound, CPU-bound, and mixed
-    workloads with configurable parameters for experimental control.
-    """
+    # Factory for generating different types of workloads.
+    # Provides methods to create I/O-bound, CPU-bound, and mixed
+    # workloads with configurable parameters for experimental control.
     
     @staticmethod
     def ioTask(durationMs: float = 50.0) -> Callable[[], None]:
-        """
-        Create an I/O-bound task using sleep.
-        
-        This simulates network latency, database queries, or file I/O
-        where the thread is blocked waiting for external resources.
-        
-        Args:
-            durationMs: Sleep duration in milliseconds.
-            
-        Returns:
-            Callable that sleeps for the specified duration.
-        """
+        # Create an I/O-bound task using sleep.
+        # This simulates network latency, database queries, or file I/O
+        # where the thread is blocked waiting for external resources.
+        # durationMs: Sleep duration in milliseconds.
+        # Returns: Callable that sleeps for the specified duration.
         def task():
             time.sleep(durationMs / 1000.0)
             return True
@@ -39,18 +29,11 @@ class WorkloadGenerator:
     
     @staticmethod
     def cpuTaskPython(iterations: int = 100000) -> Callable[[], float]:
-        """
-        Create a CPU-bound task using pure Python.
-        
-        This task holds the GIL throughout execution, making it useful
-        for testing GIL contention scenarios.
-        
-        Args:
-            iterations: Number of iterations for computation.
-            
-        Returns:
-            Callable that performs CPU-intensive computation.
-        """
+        # Create a CPU-bound task using pure Python.
+        # This task holds the GIL throughout execution, making it useful
+        # for testing GIL contention scenarios.
+        # iterations: Number of iterations for computation.
+        # Returns: Callable that performs CPU-intensive computation.
         def task():
             result = 0.0
             for i in range(iterations):

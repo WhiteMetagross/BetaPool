@@ -2,7 +2,6 @@
 
 This document provides a comprehensive overview of the project structure, file purposes, and key components for navigating the codebase.
 
----
 
 ## Project Overview:
 
@@ -14,7 +13,6 @@ This research project investigates GIL-induced concurrency thrashing in Python-b
 - Docker configurations for reproducible experiments.
 - Publication-quality figure generation.
 
----
 
 ## Directory Structure:
 
@@ -55,7 +53,6 @@ edge-gil/
     requirements.txt            # Python dependencies.
 ```
 
----
 
 ## Core Modules:
 
@@ -119,7 +116,6 @@ Workload generators for controlled experiments.
 | `cpuTaskNumpy(matrixSize)` | CPU-bound task releasing the GIL. |
 | `mixedTask(ioDurationMs, cpuIterations)` | Combined CPU and I/O workload. |
 
----
 
 ## Experiment Scripts:
 
@@ -166,8 +162,67 @@ Generates publication-quality figures from experiment data.
 | `fig2_latency_analysis.pdf` | P99 latency degradation. |
 | `fig3_efficiency.pdf` | Per-thread efficiency curve. |
 | `fig4_solution_comparison.pdf` | Adaptive vs naive strategies. |
+### experiments/instrumentationOverhead.py:
 
----
+Measures the CPU cost of blocking ratio instrumentation.
+
+**What it does:**
+
+1. Benchmarks time.time() and time.thread_time() overhead.
+2. Measures combined instrumentation pattern cost.
+3. Reports median, mean, and P99 overhead in microseconds.
+
+**Expected Output:**
+
+- Net overhead under 0.3 microseconds per task.
+- Less than 0.3% of typical workload CPU time.
+
+### experiments/workloadSweep.py:
+
+Tests controller robustness across workload types.
+
+**What it does:**
+
+1. Sweeps CPU/IO ratio from IO heavy to CPU dominant.
+2. Finds optimal thread count for each configuration.
+3. Tests beta threshold sensitivity.
+
+**Expected Output:**
+
+- IO heavy workloads prefer higher thread counts.
+- CPU heavy workloads require lower thread counts.
+
+### experiments/baselineComparison.py:
+
+Compares against alternative concurrency strategies.
+
+**Strategies Tested:**
+
+- ThreadPoolExecutor (static sizing).
+- ProcessPoolExecutor (multiprocessing).
+- Asyncio event loop.
+- Queue depth based scaler.
+
+**Expected Output:**
+
+- ProcessPool incurs significant memory overhead.
+- Asyncio struggles with mixed CPU/IO workloads.
+- Queue depth scaler overscales without GIL awareness.
+
+### experiments/controllerTimeline.py:
+
+Records adaptive controller behavior over time.
+
+**What it does:**
+
+1. Runs continuous workload for 30 seconds.
+2. Logs thread count, blocking ratio, and decisions.
+3. Records all veto events with reasons.
+
+**Output Files:**
+
+- `results/controller_timeline.csv` - Full timeline data.
+- `results/veto_events.csv` - Veto event log.
 
 ## Platform Scripts:
 
@@ -191,7 +246,23 @@ Optimized for NVIDIA Jetson Nano.
 - Thermal monitoring during benchmarks.
 - L4T version detection for compatibility.
 
----
+### platforms/enhancedDeviceBenchmark.py:
+
+Comprehensive benchmark with resource metrics.
+
+**Features:**
+
+- Automatic platform detection (Pi, Jetson, generic).
+- Memory usage tracking (average and peak).
+- CPU temperature monitoring.
+- Power consumption estimation.
+- 95% confidence intervals for all metrics.
+
+**Output:**
+
+- Full CSV with resource metrics.
+- Summary including memory and power data.
+
 
 ## Docker Configuration:
 
@@ -224,7 +295,6 @@ Orchestrates all experiments. Services:
 - `figures` - Figure generation.
 - `all` - Run everything in sequence.
 
----
 
 ## Test Suite:
 
@@ -246,7 +316,6 @@ Unit tests for the adaptive executor.
 python -m pytest tests/ -v
 ```
 
----
 
 ## Data Files:
 
@@ -260,8 +329,12 @@ Contains CSV files from experiment runs:
 | `io_baseline.csv` | Single-core pure I/O baseline. |
 | `quadcore_mixed_workload.csv` | Quad-core mixed workload results. |
 | `quadcore_io_baseline.csv` | Quad-core pure I/O baseline. |
-| `solution_comparison.csv` | Adaptive vs static strategy comparison. |
-
+| `solution_comparison.csv` | Adaptive vs static strategy comparison. || `instrumentation_overhead.csv` | Timer overhead measurements. |
+| `workload_sweep.csv` | CPU/IO ratio sweep results. |
+| `beta_threshold_sensitivity.csv` | Beta parameter sensitivity data. |
+| `baseline_comparison.csv` | Alternative strategy comparison. |
+| `controller_timeline.csv` | Controller behavior timeline. |
+| `veto_events.csv` | Recorded veto decisions. |
 ### CSV Schema:
 
 Common columns across result files:
@@ -274,7 +347,6 @@ Common columns across result files:
 | avgLat | float | Average latency in milliseconds. |
 | p99Lat | float | 99th percentile latency. |
 
----
 
 ## Key Algorithms:
 
@@ -291,17 +363,16 @@ beta = 1.0 - (cpuTime / wallTime)
 
 ```python
 if queueLength > 0 and avgBeta > GIL_DANGER_ZONE:
-    # I/O-bound with backlog: scale up.
+    # I/O-bound with backlog: scale up.:
     return currentThreads + scaleUpStep
 elif queueLength > 0 and avgBeta <= GIL_DANGER_ZONE:
-    # CPU-bound with backlog: VETO scale-up.
+    # CPU-bound with backlog: VETO scale-up.:
     return currentThreads
 elif queueLength == 0:
-    # No backlog: scale down to save resources.
+    # No backlog: scale down to save resources.:
     return max(currentThreads - scaleDownStep, minThreads)
 ```
 
----
 
 ## Dependencies:
 
@@ -315,7 +386,6 @@ elif queueLength == 0:
 - `numpy>=1.24.0` - Extended workload types.
 - `pytest>=7.0.0` - Running test suite.
 
----
 
 ## Contributing:
 

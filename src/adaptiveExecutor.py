@@ -19,12 +19,9 @@ logger = logging.getLogger(__name__)
 
 
 class ControllerConfig:
-    """
-    Configuration parameters for the adaptive controller.
-    
-    These values are tuned based on empirical testing on typical
-    server hardware (8-16 cores). Adjust for specific deployments.
-    """
+    # Configuration parameters for the adaptive controller.
+    # These values are tuned based on empirical testing on typical
+    # server hardware (8-16 cores). Adjust for specific deployments.
     
     def __init__(
         self,
@@ -38,20 +35,16 @@ class ControllerConfig:
         stabilizationWindowSec: float = 2.0,
         warmupTaskCount: int = 10,
     ):
-        """
-        Initialize controller configuration.
-        
-        Args:
-            monitorIntervalSec: Time between controller decisions.
-            betaHighThreshold: Blocking ratio above which we scale up (I/O-bound).
-            betaLowThreshold: Blocking ratio below which we scale down (CPU-bound).
-            scaleUpStep: Number of threads to add when scaling up.
-            scaleDownStep: Number of threads to remove when scaling down.
-            cpuUpperThreshold: CPU utilization above which we avoid scaling up.
-            cpuLowerThreshold: CPU utilization below which we may scale down.
-            stabilizationWindowSec: Minimum time between scaling decisions.
-            warmupTaskCount: Minimum tasks before making scaling decisions.
-        """
+        # Initialize controller configuration.
+        # monitorIntervalSec: Time between controller decisions.
+        # betaHighThreshold: Blocking ratio above which we scale up (I/O-bound).
+        # betaLowThreshold: Blocking ratio below which we scale down (CPU-bound).
+        # scaleUpStep: Number of threads to add when scaling up.
+        # scaleDownStep: Number of threads to remove when scaling down.
+        # cpuUpperThreshold: CPU utilization above which we avoid scaling up.
+        # cpuLowerThreshold: CPU utilization below which we may scale down.
+        # stabilizationWindowSec: Minimum time between scaling decisions.
+        # warmupTaskCount: Minimum tasks before making scaling decisions.
         self.monitorIntervalSec = monitorIntervalSec
         self.betaHighThreshold = betaHighThreshold
         self.betaLowThreshold = betaLowThreshold
@@ -68,11 +61,8 @@ class ControllerState:
     Runtime state of the adaptive controller.
     
     Tracks scaling decisions and provides data for experiment logging.
-    """
-    
-    def __init__(self, initialThreads: int):
-        self.currentThreads = initialThreads
-        self.lastScaleTime = time.time()
+    # Runtime state of the adaptive controller.
+    # Tracks scaling decisions and provides data for experiment logging. self.lastScaleTime = time.time()
         self.scaleUpCount = 0
         self.scaleDownCount = 0
         self.decisionHistory: List[Dict[str, Any]] = []
@@ -94,7 +84,7 @@ class ControllerState:
             "threadsAfter": threadsAfter,
             "blockingRatio": blockingRatio,
             "cpuPercent": cpuPercent,
-            "throughput": throughput,
+        # Record a scaling decision for later analysis.
             "decision": decision,
         })
 

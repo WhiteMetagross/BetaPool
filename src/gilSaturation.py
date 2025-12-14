@@ -19,7 +19,7 @@ from src.metrics import MetricsCollector, TaskMetrics
 
 @dataclass
 class GilExperimentConfig:
-    """Configuration for the GIL saturation experiment."""
+    # Configuration for the GIL saturation experiment.
     threadCounts: List[int] = None  # Will default to [1, 2, 4, 8, 16, 32]
     tasksPerThread: int = 50
     fibonacciN: int = 28  # Computation intensity (higher = longer)
@@ -33,7 +33,7 @@ class GilExperimentConfig:
 
 @dataclass
 class GilDataPoint:
-    """Data point for a single thread count configuration."""
+    # Data point for a single thread count configuration.
     threadCount: int
     totalThroughput: float  # Tasks per second
     avgBlockingRatio: float
@@ -45,9 +45,7 @@ class GilDataPoint:
 
 
 def fibonacciRecursive(n: int) -> int:
-    """
-    Compute the nth Fibonacci number recursively.
-    
+    # Compute the nth Fibonacci number recursively.
     This is intentionally inefficient to hold the GIL for extended periods.
     Pure Python computation with no opportunity for GIL release.
     

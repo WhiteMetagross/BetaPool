@@ -2,20 +2,18 @@
 
 This document provides comprehensive instructions for running the GIL Saturation Cliff experiments and using the Adaptive Thread Pool in your own applications.
 
----
 
 ## Table of Contents:
 
-1. [Prerequisites](#prerequisites)
-2. [Quick Start](#quick-start)
-3. [Running Experiments](#running-experiments)
-4. [Docker Reproducibility](#docker-reproducibility)
-5. [Platform-Specific Instructions](#platform-specific-instructions)
-6. [Using the Adaptive Executor](#using-the-adaptive-executor)
-7. [Generating Figures](#generating-figures)
-8. [Troubleshooting](#troubleshooting)
+1. [Prerequisites](#prerequisites).
+2. [Quick Start](#quick-start).
+3. [Running Experiments](#running-experiments).
+4. [Docker Reproducibility](#docker-reproducibility).
+5. [Platform-Specific Instructions](#platform-specific-instructions).
+6. [Using the Adaptive Executor](#using-the-adaptive-executor).
+7. [Generating Figures](#generating-figures).
+8. [Troubleshooting](#troubleshooting).
 
----
 
 ## Prerequisites:
 
@@ -40,24 +38,23 @@ The requirements include:
 - `matplotlib` - Figure generation.
 - `numpy` - Numerical operations (optional, for extended workloads).
 
----
 
 ## Quick Start:
 
 ### Running a Basic Experiment:
 
 ```bash
-# Clone the repository.
+# Clone the repository.:
 git clone https://github.com/yourusername/edge-gil.git
 cd edge-gil
 
-# Install dependencies.
+# Install dependencies.:
 pip install -r requirements.txt
 
-# Run the single-core experiment (recommended for strongest signal).
+# Run the single-core experiment (recommended for strongest signal).:
 python experiments/singleCoreBenchmark.py
 
-# Generate publication figures.
+# Generate publication figures.:
 python experiments/generateFigures.py
 ```
 
@@ -69,7 +66,6 @@ The experiment will output a table showing throughput and latency at different t
 - Declining throughput beyond the peak (the saturation cliff).
 - Results saved to CSV files in the `results/` directory.
 
----
 
 ## Running Experiments:
 
@@ -93,6 +89,46 @@ python experiments/quadCoreBenchmark.py
 
 This demonstrates that the saturation cliff persists even on multi-core hardware.
 
+### Instrumentation Overhead Benchmark:
+
+Measures the cost of blocking ratio instrumentation:
+
+```bash
+python experiments/instrumentationOverhead.py
+```
+
+This benchmark validates that instrumentation adds less than 0.3% overhead to typical workloads.
+
+### Workload Parameter Sweep:
+
+Tests robustness across different CPU/IO ratios:
+
+```bash
+python experiments/workloadSweep.py
+```
+
+This experiment demonstrates that optimal thread count varies with workload characteristics and validates the beta threshold parameter.
+
+### Baseline Comparison:
+
+Compares against alternative concurrency strategies:
+
+```bash
+python experiments/baselineComparison.py
+```
+
+This compares threading against multiprocessing, asyncio, and queue depth based scalers.
+
+### Controller Timeline:
+
+Captures detailed controller behavior over time:
+
+```bash
+python experiments/controllerTimeline.py
+```
+
+This experiment records thread count adjustments, blocking ratio, and veto events for visualization.
+
 ### Understanding the Output:
 
 The benchmark displays a table with these columns:
@@ -105,7 +141,6 @@ The benchmark displays a table with these columns:
 | P99 Lat | 99th percentile latency. |
 | Status | OK, DECLINE, DROP, or CLIFF based on degradation. |
 
----
 
 ## Docker Reproducibility:
 
@@ -114,13 +149,13 @@ The benchmark displays a table with these columns:
 ```bash
 cd docker
 
-# Build the base image.
+# Build the base image.:
 docker build -t edge-gil:latest -f Dockerfile ..
 
-# Build single-core simulation.
+# Build single-core simulation.:
 docker build -t edge-gil:singlecore -f Dockerfile.singleCore ..
 
-# Build quad-core simulation.
+# Build quad-core simulation.:
 docker build -t edge-gil:quadcore -f Dockerfile.quadCore ..
 ```
 
@@ -157,7 +192,6 @@ docker-compose up figures
 
 Results will be saved to the `results/` and `figures/` directories on your host machine.
 
----
 
 ## Platform-Specific Instructions:
 
@@ -178,7 +212,13 @@ pip3 install psutil matplotlib
 python3 platforms/raspberryPiBenchmark.py
 ```
 
-4. Expected cliff severity: 30-50% degradation at high thread counts.
+4. For comprehensive resource metrics including memory and power estimates:
+
+```bash
+python3 platforms/enhancedDeviceBenchmark.py
+```
+
+5. Expected cliff severity: 30 to 50% degradation at high thread counts.
 
 ### NVIDIA Jetson Nano:
 
@@ -208,7 +248,6 @@ wsl python3 experiments/singleCoreBenchmark.py
 
 3. Native Windows may show weaker cliff due to different scheduler behavior.
 
----
 
 ## Using the Adaptive Executor:
 
@@ -217,12 +256,12 @@ wsl python3 experiments/singleCoreBenchmark.py
 ```python
 from src.adaptiveExecutor import AdaptiveThreadPoolExecutor
 
-# Create an adaptive executor with bounds.
+# Create an adaptive executor with bounds.:
 with AdaptiveThreadPoolExecutor(minWorkers=4, maxWorkers=64) as executor:
-    # Submit tasks as you would with ThreadPoolExecutor.
+    # Submit tasks as you would with ThreadPoolExecutor.:
     futures = [executor.submit(myTask, arg) for arg in myArgs]
     
-    # Collect results.
+    # Collect results.:
     results = [f.result() for f in futures]
 ```
 
@@ -231,7 +270,7 @@ with AdaptiveThreadPoolExecutor(minWorkers=4, maxWorkers=64) as executor:
 ```python
 from src.adaptiveExecutor import AdaptiveThreadPoolExecutor, ControllerConfig
 
-# Custom configuration for specific workloads.
+# Custom configuration for specific workloads.:
 config = ControllerConfig(
     monitorIntervalSec=0.5,      # How often to check metrics.
     betaHighThreshold=0.7,       # Scale up if blocking ratio exceeds this.
@@ -251,14 +290,13 @@ executor = AdaptiveThreadPoolExecutor(
 ### Monitoring:
 
 ```python
-# Get current state during execution.
+# Get current state during execution.:
 state = executor.controllerState
 print(f"Current threads: {state.currentThreads}")
 print(f"Scale-up count: {state.scaleUpCount}")
 print(f"Scale-down count: {state.scaleDownCount}")
 ```
 
----
 
 ## Generating Figures:
 
@@ -284,7 +322,6 @@ The figure generator uses matplotlib with publication-quality settings. Modify `
 - Axis labels and titles.
 - Font sizes.
 
----
 
 ## Troubleshooting:
 
@@ -322,7 +359,6 @@ cd /path/to/edge-gil
 docker build -t edge-gil -f docker/Dockerfile .
 ```
 
----
 
 ## Running Tests:
 
@@ -338,7 +374,6 @@ Or run individual test files:
 python -m pytest tests/testAdaptiveExecutor.py -v
 ```
 
----
 
 ## Contact and Support:
 
