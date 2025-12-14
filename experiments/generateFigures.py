@@ -460,178 +460,275 @@ def main():
 
 
 # ---------------------------------------------------------------------------
-# Architecture diagrams (static). Keeping here ensures a single entry point
-# for regenerating all figures used in the paper.
+# Architecture diagrams (static). Publication quality using matplotlib.
+# Designed for IEEE/ACM conference proceedings.
 # ---------------------------------------------------------------------------
 
-def _add_rounded_box(ax, xy, width, height, label, facecolor="#f7f7f7", edgecolor="#333333", fontsize=9, weight="bold", boxstyle="round,pad=0.1"):
-    # Use FancyBboxPatch for rounded corners
-    p = patches.FancyBboxPatch(xy, width, height, boxstyle=boxstyle, 
-                               linewidth=1.5, edgecolor=edgecolor, facecolor=facecolor, zorder=2)
-    ax.add_patch(p)
-    ax.text(xy[0] + width / 2, xy[1] + height / 2, label,
-            ha="center", va="center", fontsize=fontsize, fontweight=weight, zorder=3, wrap=True)
-    return p
-
-def _add_diamond(ax, xy, width, height, label, facecolor="#ffffff", edgecolor="#333333", fontsize=8):
-    # Draw a diamond shape using Polygon
-    pts = [
-        (xy[0] + width/2, xy[1]),           # Bottom
-        (xy[0] + width, xy[1] + height/2),  # Right
-        (xy[0] + width/2, xy[1] + height),  # Top
-        (xy[0], xy[1] + height/2)           # Left
-    ]
-    poly = patches.Polygon(pts, closed=True, linewidth=1.5, edgecolor=edgecolor, facecolor=facecolor, zorder=2)
-    ax.add_patch(poly)
-    ax.text(xy[0] + width / 2, xy[1] + height / 2, label,
-            ha="center", va="center", fontsize=fontsize, zorder=3, wrap=True)
-    return poly
-
-def _add_fancy_arrow(ax, start, end, text=None, offset=(0, 0), fontsize=8, color="#444444", connectionstyle="arc3,rad=0"):
-    # Use annotate for better arrows
-    ax.annotate("", xy=end, xytext=start,
-                arrowprops=dict(arrowstyle="->", color=color, lw=1.5, connectionstyle=connectionstyle),
-                zorder=1)
-    if text:
-        mid_x = (start[0] + end[0]) / 2 + offset[0]
-        mid_y = (start[1] + end[1]) / 2 + offset[1]
-        # For curved lines, simple midpoint might be off, but good enough for straight lines
-        ax.text(mid_x, mid_y, text, ha="center", va="center", fontsize=fontsize, 
-                bbox=dict(facecolor='white', edgecolor='none', alpha=0.7, pad=0))
-
 def _generate_system_architecture():
-    fig, ax = plt.subplots(figsize=(10, 4))
-    ax.axis("off")
-    ax.set_xlim(0, 16)
+    """
+    Generate a professional 3-tier system architecture diagram.
+    Application Layer -> Adaptive Thread Pool Controller -> Worker Threads -> Python Interpreter (GIL)
+    """
+    fig, ax = plt.subplots(figsize=(7.5, 3.2), dpi=300)
+    ax.set_xlim(0, 15)
     ax.set_ylim(0, 6)
-
-    # Colors
-    c_app = "#E3F2FD" # Light Blue
-    c_ctrl = "#F3E5F5" # Light Purple
-    c_work = "#E8F5E9" # Light Green
-    c_gil = "#FFEBEE" # Light Red
-    c_inner = "#FFFFFF"
-
-    # 1. Application Layer
-    _add_rounded_box(ax, (1, 2.5), 2.5, 3.0, "Application Layer\n(FastAPI / Flask)", facecolor=c_app)
-
-    # 2. Adaptive Controller (Container)
-    _add_rounded_box(ax, (5, 1.0), 5.0, 4.5, "", facecolor=c_ctrl, edgecolor="#7B1FA2")
-    ax.text(7.5, 5.2, "Adaptive Thread Pool Controller", ha="center", fontsize=10, fontweight="bold", color="#4A148C")
-
-    # Controller Internals
-    _add_rounded_box(ax, (5.5, 3.5), 1.8, 1.5, "Instrumentor\n(Wraps Tasks)", facecolor=c_inner, fontsize=8, weight="normal")
-    _add_rounded_box(ax, (7.8, 3.5), 1.8, 1.5, "Monitor\n(Calc \u03b2)", facecolor=c_inner, fontsize=8, weight="normal")
-    _add_rounded_box(ax, (5.5, 1.5), 4.1, 1.5, "Decision Engine\n(Veto / Scale)", facecolor=c_inner, fontsize=8, weight="normal")
-
-    # 3. Worker Threads
-    _add_rounded_box(ax, (11.5, 1.0), 2.0, 4.5, "Worker\nPool", facecolor=c_work)
-    # Draw small circles for threads
-    for i in range(4):
-        circle = patches.Circle((12.5, 1.8 + i*0.8), 0.3, facecolor="white", edgecolor="#2E7D32")
+    ax.set_aspect('equal')
+    ax.axis('off')
+    
+    # Professional color palette (IEEE style)
+    colors = {
+        'app': '#4472C4',        # Blue
+        'controller': '#7030A0', # Purple  
+        'workers': '#00B050',    # Green
+        'gil': '#C00000',        # Red
+        'internal': '#FFFFFF',
+        'text_light': '#FFFFFF',
+        'text_dark': '#333333',
+        'arrow': '#404040',
+        'shadow': '#CCCCCC'
+    }
+    
+    # Helper to draw 3D effect box
+    def draw_box(x, y, w, h, color, label, sublabel=None, fontcolor='white'):
+        # Shadow
+        shadow = patches.FancyBboxPatch((x+0.08, y-0.08), w, h, 
+                                        boxstyle="round,pad=0.02,rounding_size=0.15",
+                                        facecolor=colors['shadow'], edgecolor='none', zorder=1)
+        ax.add_patch(shadow)
+        # Main box
+        box = patches.FancyBboxPatch((x, y), w, h,
+                                     boxstyle="round,pad=0.02,rounding_size=0.15",
+                                     facecolor=color, edgecolor='none', zorder=2)
+        ax.add_patch(box)
+        # Label
+        if sublabel:
+            ax.text(x + w/2, y + h/2 + 0.15, label, ha='center', va='center',
+                   fontsize=8, fontweight='bold', color=fontcolor, zorder=3)
+            ax.text(x + w/2, y + h/2 - 0.25, sublabel, ha='center', va='center',
+                   fontsize=6, color=fontcolor, style='italic', zorder=3)
+        else:
+            ax.text(x + w/2, y + h/2, label, ha='center', va='center',
+                   fontsize=8, fontweight='bold', color=fontcolor, zorder=3)
+    
+    def draw_inner_box(x, y, w, h, label, sublabel=None):
+        box = patches.FancyBboxPatch((x, y), w, h,
+                                     boxstyle="round,pad=0.02,rounding_size=0.1",
+                                     facecolor='#F8F8F8', edgecolor='#666666', 
+                                     linewidth=0.8, zorder=4)
+        ax.add_patch(box)
+        if sublabel:
+            ax.text(x + w/2, y + h/2 + 0.12, label, ha='center', va='center',
+                   fontsize=6.5, fontweight='bold', color=colors['text_dark'], zorder=5)
+            ax.text(x + w/2, y + h/2 - 0.15, sublabel, ha='center', va='center',
+                   fontsize=5.5, color='#666666', zorder=5)
+        else:
+            ax.text(x + w/2, y + h/2, label, ha='center', va='center',
+                   fontsize=6.5, fontweight='bold', color=colors['text_dark'], zorder=5)
+    
+    def draw_arrow(x1, y1, x2, y2, label=None, label_pos='above'):
+        ax.annotate('', xy=(x2, y2), xytext=(x1, y1),
+                   arrowprops=dict(arrowstyle='->', color=colors['arrow'], lw=1.2,
+                                  shrinkA=2, shrinkB=2), zorder=6)
+        if label:
+            mid_x = (x1 + x2) / 2
+            mid_y = (y1 + y2) / 2
+            offset = 0.22 if label_pos == 'above' else -0.22
+            ax.text(mid_x, mid_y + offset, label, ha='center', va='center',
+                   fontsize=5.5, color='#555555', zorder=7,
+                   bbox=dict(boxstyle='round,pad=0.15', facecolor='white', 
+                            edgecolor='none', alpha=0.9))
+    
+    # Layer 1: Application Layer
+    draw_box(0.3, 1.8, 2.2, 2.4, colors['app'], 'Application', 'Layer')
+    
+    # Layer 2: Adaptive Controller (large container)
+    draw_box(3.2, 0.8, 5.8, 4.2, colors['controller'], '', '')
+    ax.text(6.1, 4.7, 'Adaptive Thread Pool Controller', ha='center', va='center',
+           fontsize=9, fontweight='bold', color=colors['controller'], zorder=10)
+    
+    # Controller internals
+    draw_inner_box(3.5, 3.4, 1.6, 1.2, 'Instrumentor', 'Wrap tasks')
+    draw_inner_box(5.4, 3.4, 1.5, 1.2, 'Monitor', 'Compute β')
+    draw_inner_box(7.2, 3.4, 1.5, 1.2, 'Controller', 'Veto logic')
+    draw_inner_box(3.5, 1.2, 5.2, 1.6, 'Metrics Engine', 'Queue depth, Blocking ratio β, Thread utilization')
+    
+    # Internal arrows
+    ax.annotate('', xy=(5.4, 4.0), xytext=(5.1, 4.0),
+               arrowprops=dict(arrowstyle='->', color='#888888', lw=0.8), zorder=6)
+    ax.annotate('', xy=(7.2, 4.0), xytext=(6.9, 4.0),
+               arrowprops=dict(arrowstyle='->', color='#888888', lw=0.8), zorder=6)
+    ax.annotate('', xy=(6.1, 2.8), xytext=(6.1, 3.4),
+               arrowprops=dict(arrowstyle='<->', color='#888888', lw=0.8), zorder=6)
+    
+    # Layer 3: Worker Threads
+    draw_box(9.7, 1.8, 2.0, 2.4, colors['workers'], 'Worker', 'Threads')
+    # Thread indicators
+    for i in range(3):
+        circle = patches.Circle((10.7, 2.3 + i*0.65), 0.18, 
+                                facecolor='white', edgecolor=colors['workers'], linewidth=1, zorder=8)
         ax.add_patch(circle)
-        ax.text(12.5, 1.8 + i*0.8, "T", ha="center", va="center", fontsize=7)
-
-    # 4. Python Interpreter (GIL)
-    _add_rounded_box(ax, (14.5, 2.0), 1.5, 2.5, "Python\nInterpreter\n(GIL)", facecolor=c_gil, edgecolor="#C62828")
-
-    # Arrows
-    # App -> Instrumentor
-    _add_fancy_arrow(ax, (3.5, 4.0), (5.5, 4.0), text="Submit Task")
+        ax.text(10.7, 2.3 + i*0.65, f'T{i+1}', ha='center', va='center', fontsize=4.5, zorder=9)
     
-    # Instrumentor -> Monitor (Metrics)
-    _add_fancy_arrow(ax, (7.3, 4.25), (7.8, 4.25), text="Timing")
+    # Layer 4: Python Interpreter
+    draw_box(12.4, 1.8, 2.2, 2.4, colors['gil'], 'Python', 'Interpreter')
+    # GIL indicator
+    gil_box = patches.FancyBboxPatch((12.7, 2.1), 1.6, 0.5,
+                                     boxstyle="round,pad=0.02,rounding_size=0.08",
+                                     facecolor='#FF6666', edgecolor='white', 
+                                     linewidth=1, zorder=8)
+    ax.add_patch(gil_box)
+    ax.text(13.5, 2.35, 'GIL', ha='center', va='center', fontsize=6, 
+           fontweight='bold', color='white', zorder=9)
     
-    # Monitor -> Decision Engine
-    _add_fancy_arrow(ax, (8.7, 3.5), (8.7, 3.0))
+    # Main flow arrows
+    draw_arrow(2.5, 3.0, 3.2, 3.0, 'Submit', 'above')
+    draw_arrow(9.0, 3.0, 9.7, 3.0, 'Execute', 'above')
+    draw_arrow(11.7, 3.0, 12.4, 3.0, 'Acquire', 'above')
     
-    # Decision Engine -> Worker Pool (Scale)
-    _add_fancy_arrow(ax, (9.6, 2.25), (11.5, 2.25), text="Adjust Size")
+    # Feedback arrow (curved)
+    ax.annotate('', xy=(9.0, 2.0), xytext=(9.7, 2.0),
+               arrowprops=dict(arrowstyle='<-', color=colors['arrow'], lw=1.0,
+                              connectionstyle='arc3,rad=0.3'), zorder=6)
+    ax.text(9.35, 1.55, 'Scale', ha='center', va='center', fontsize=5, color='#555555')
     
-    # Instrumentor -> Worker Pool (Execution)
-    _add_fancy_arrow(ax, (6.4, 3.5), (11.5, 4.0), connectionstyle="arc3,rad=-0.2", text="Execute")
-
-    # Worker Pool -> GIL
-    _add_fancy_arrow(ax, (13.5, 3.25), (14.5, 3.25), text="Acquire")
-    
-    plt.tight_layout()
-    plt.savefig("figures/fig_architecture.pdf", bbox_inches="tight")
-    plt.savefig("figures/fig_architecture.png", bbox_inches="tight")
+    plt.tight_layout(pad=0.5)
+    plt.savefig("figures/fig_architecture.pdf", bbox_inches="tight", dpi=300)
+    plt.savefig("figures/fig_architecture.png", bbox_inches="tight", dpi=300)
     plt.close(fig)
 
+
 def _generate_controller_flow():
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.axis("off")
-    ax.set_xlim(0, 10)
-    ax.set_ylim(0, 10)
-
-    # Colors
-    c_start = "#BBDEFB"
-    c_dec = "#FFF9C4" # Yellow
-    c_act_good = "#C8E6C9" # Green
-    c_act_bad = "#FFCDD2" # Red
-    c_act_neu = "#E1BEE7" # Purple
-
+    """
+    Generate a professional flowchart for the controller decision logic.
+    Standard flowchart symbols: ovals (start/end), diamonds (decisions), rectangles (actions).
+    """
+    fig, ax = plt.subplots(figsize=(5.5, 6.5), dpi=300)
+    ax.set_xlim(0, 11)
+    ax.set_ylim(0, 14)
+    ax.set_aspect('equal')
+    ax.axis('off')
+    
+    # Professional colors
+    colors = {
+        'start': '#4472C4',      # Blue
+        'decision': '#FFC000',   # Yellow/Gold
+        'action_pos': '#00B050', # Green
+        'action_neg': '#C00000', # Red
+        'action_neu': '#7030A0', # Purple
+        'end': '#404040',        # Dark gray
+        'arrow': '#404040',
+        'text': '#333333'
+    }
+    
+    def draw_oval(cx, cy, w, h, color, label, fontcolor='white'):
+        oval = patches.Ellipse((cx, cy), w, h, facecolor=color, edgecolor='none', zorder=2)
+        shadow = patches.Ellipse((cx+0.06, cy-0.06), w, h, facecolor='#CCCCCC', edgecolor='none', zorder=1)
+        ax.add_patch(shadow)
+        ax.add_patch(oval)
+        ax.text(cx, cy, label, ha='center', va='center', fontsize=7, 
+               fontweight='bold', color=fontcolor, zorder=3)
+    
+    def draw_diamond(cx, cy, w, h, color, label):
+        pts = [(cx, cy-h/2), (cx+w/2, cy), (cx, cy+h/2), (cx-w/2, cy)]
+        shadow = patches.Polygon([(p[0]+0.06, p[1]-0.06) for p in pts], 
+                                facecolor='#CCCCCC', edgecolor='none', zorder=1)
+        diamond = patches.Polygon(pts, facecolor=color, edgecolor='#B8860B', 
+                                 linewidth=1.2, zorder=2)
+        ax.add_patch(shadow)
+        ax.add_patch(diamond)
+        ax.text(cx, cy, label, ha='center', va='center', fontsize=6.5, 
+               color=colors['text'], zorder=3, linespacing=1.2)
+    
+    def draw_rect(cx, cy, w, h, color, label, fontcolor='white'):
+        shadow = patches.FancyBboxPatch((cx-w/2+0.06, cy-h/2-0.06), w, h,
+                                        boxstyle="round,pad=0.02,rounding_size=0.12",
+                                        facecolor='#CCCCCC', edgecolor='none', zorder=1)
+        rect = patches.FancyBboxPatch((cx-w/2, cy-h/2), w, h,
+                                      boxstyle="round,pad=0.02,rounding_size=0.12",
+                                      facecolor=color, edgecolor='none', zorder=2)
+        ax.add_patch(shadow)
+        ax.add_patch(rect)
+        ax.text(cx, cy, label, ha='center', va='center', fontsize=6.5, 
+               fontweight='bold', color=fontcolor, zorder=3, linespacing=1.1)
+    
+    def draw_arrow(x1, y1, x2, y2, label=None, label_side='right'):
+        ax.annotate('', xy=(x2, y2), xytext=(x1, y1),
+                   arrowprops=dict(arrowstyle='->', color=colors['arrow'], lw=1.3,
+                                  shrinkA=3, shrinkB=3), zorder=5)
+        if label:
+            mid_x = (x1 + x2) / 2
+            mid_y = (y1 + y2) / 2
+            if label_side == 'right':
+                offset_x, offset_y = 0.4, 0
+            elif label_side == 'left':
+                offset_x, offset_y = -0.4, 0
+            else:
+                offset_x, offset_y = 0, 0.25
+            ax.text(mid_x + offset_x, mid_y + offset_y, label, ha='center', va='center',
+                   fontsize=6, fontweight='bold', color='#666666', zorder=6)
+    
+    def draw_line(points):
+        xs = [p[0] for p in points]
+        ys = [p[1] for p in points]
+        ax.plot(xs, ys, color=colors['arrow'], lw=1.3, solid_capstyle='round', zorder=4)
+    
     # Nodes
     # Start
-    _add_rounded_box(ax, (4.0, 9.0), 2.0, 0.8, "Start / Loop", facecolor=c_start, boxstyle="round,pad=0.3")
+    draw_oval(5.5, 13, 2.2, 0.9, colors['start'], 'START')
     
-    # Decision 1: Queue > 0
-    _add_diamond(ax, (3.5, 7.0), 3.0, 1.5, "Queue Length\n> 0?", facecolor=c_dec)
+    # Decision 1: Queue Check
+    draw_diamond(5.5, 10.8, 3.2, 1.8, colors['decision'], 'Queue\nLength > 0?')
     
-    # Decision 2: Beta > Threshold
-    _add_diamond(ax, (6.5, 5.0), 3.0, 1.5, "Blocking Ratio \u03b2\n> Threshold?", facecolor=c_dec)
+    # Decision 2: Beta Check
+    draw_diamond(8.0, 8.2, 3.2, 1.8, colors['decision'], 'β > βthreshold?')
     
-    # Action: Scale Down
-    _add_rounded_box(ax, (0.5, 5.0), 2.5, 1.0, "Scale Down\n(If Idle)", facecolor=c_act_neu)
-    
-    # Action: Scale Up
-    _add_rounded_box(ax, (7.0, 3.0), 2.0, 1.0, "Scale Up\n(+1 Thread)", facecolor=c_act_good)
-    
-    # Action: Veto
-    _add_rounded_box(ax, (4.0, 3.0), 2.0, 1.0, "VETO\n(Block Scale)", facecolor=c_act_bad)
+    # Actions
+    draw_rect(2.5, 8.2, 2.2, 1.1, colors['action_neu'], 'Scale Down\n(if idle)')
+    draw_rect(8.0, 5.5, 2.2, 1.1, colors['action_pos'], 'Scale Up\n(+1 thread)')
+    draw_rect(5.5, 5.5, 2.2, 1.1, colors['action_neg'], 'VETO\n(no scale)')
     
     # Sleep
-    _add_rounded_box(ax, (4.0, 1.0), 2.0, 0.8, "Sleep \u0394t", facecolor="#F5F5F5")
-
+    draw_rect(5.5, 2.8, 2.5, 1.1, '#666666', 'Sleep Δt\n(500 ms)')
+    
+    # Loop indicator
+    draw_oval(5.5, 0.8, 1.8, 0.7, colors['end'], 'LOOP', fontcolor='white')
+    
     # Arrows
     # Start -> Queue
-    _add_fancy_arrow(ax, (5.0, 9.0), (5.0, 8.5))
+    draw_arrow(5.5, 12.55, 5.5, 11.7)
     
     # Queue -> No -> Scale Down
-    _add_fancy_arrow(ax, (3.5, 7.75), (1.75, 7.75), text="No")
-    _add_fancy_arrow(ax, (1.75, 7.75), (1.75, 6.0))
+    draw_line([(3.9, 10.8), (2.5, 10.8)])
+    draw_arrow(2.5, 10.8, 2.5, 8.75, 'No', 'left')
     
     # Queue -> Yes -> Beta
-    _add_fancy_arrow(ax, (6.5, 7.75), (8.0, 7.75), text="Yes")
-    _add_fancy_arrow(ax, (8.0, 7.75), (8.0, 6.5))
+    draw_line([(7.1, 10.8), (8.0, 10.8)])
+    draw_arrow(8.0, 10.8, 8.0, 9.1, 'Yes', 'right')
     
     # Beta -> Yes -> Scale Up
-    _add_fancy_arrow(ax, (8.0, 5.0), (8.0, 4.0), text="Yes (Safe)")
+    draw_arrow(8.0, 7.3, 8.0, 6.05, 'Yes', 'right')
     
     # Beta -> No -> Veto
-    _add_fancy_arrow(ax, (6.5, 5.75), (5.0, 5.75), text="No (Contention)")
-    _add_fancy_arrow(ax, (5.0, 5.75), (5.0, 4.0))
+    draw_line([(6.4, 8.2), (5.5, 8.2)])
+    draw_arrow(5.5, 8.2, 5.5, 6.05, 'No', 'left')
     
-    # Merge back to Sleep
-    _add_fancy_arrow(ax, (1.75, 5.0), (1.75, 1.4)) # From Scale Down
-    _add_fancy_arrow(ax, (1.75, 1.4), (4.0, 1.4))
-    
-    _add_fancy_arrow(ax, (8.0, 3.0), (8.0, 1.4)) # From Scale Up
-    _add_fancy_arrow(ax, (8.0, 1.4), (6.0, 1.4))
-    
-    _add_fancy_arrow(ax, (5.0, 3.0), (5.0, 1.8)) # From Veto
+    # All actions -> Sleep
+    draw_line([(2.5, 7.65), (2.5, 2.8), (4.25, 2.8)])
+    draw_line([(5.5, 4.95), (5.5, 3.35)])
+    draw_line([(8.0, 4.95), (8.0, 2.8), (6.75, 2.8)])
     
     # Sleep -> Loop
-    # Draw a line from bottom of sleep around to top
-    ax.plot([5.0, 5.0], [1.0, 0.5], color="#444444", lw=1.5)
-    ax.plot([5.0, 0.2], [0.5, 0.5], color="#444444", lw=1.5)
-    ax.plot([0.2, 0.2], [0.5, 9.4], color="#444444", lw=1.5)
-    _add_fancy_arrow(ax, (0.2, 9.4), (4.0, 9.4))
-
-    plt.tight_layout()
-    plt.savefig("figures/fig_controller_flow.pdf", bbox_inches="tight")
-    plt.savefig("figures/fig_controller_flow.png", bbox_inches="tight")
+    draw_arrow(5.5, 2.25, 5.5, 1.15)
+    
+    # Loop back (curved line on left side)
+    draw_line([(4.6, 0.8), (1.0, 0.8), (1.0, 13.0), (4.4, 13.0)])
+    # Add small arrow at the end
+    ax.annotate('', xy=(4.4, 13.0), xytext=(3.8, 13.0),
+               arrowprops=dict(arrowstyle='->', color=colors['arrow'], lw=1.3), zorder=5)
+    
+    plt.tight_layout(pad=0.5)
+    plt.savefig("figures/fig_controller_flow.pdf", bbox_inches="tight", dpi=300)
+    plt.savefig("figures/fig_controller_flow.png", bbox_inches="tight", dpi=300)
     plt.close(fig)
 
 
