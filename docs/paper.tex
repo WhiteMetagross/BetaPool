@@ -42,7 +42,7 @@ A frequent objection suggests rewriting performance critical code in C++ or Rust
 
 \subsection{The Problem: GIL Induced Concurrency Thrashing}
 
-The GIL is a mutex that serializes Python bytecode execution. It's behavior differs according to the workload. Threads release the GIL during Input/Output operations, but hold it during computation. When an edge AI workload mixes these phases, it creates a performance anomaly. Threads spend more time acquiring the lock than doing useful work. The OS scheduler moves blocked threads onto available cores. They immediately block again on the GIL. This increases CPU cache traffic and decreases throughput as the thread count rises. We call this the saturation cliff.
+The GIL is a mutex that serializes Python bytecode execution. Its behavior differs according to the workload. Threads release the GIL during Input/Output operations, but hold it during computation. When an edge AI workload mixes these phases, it creates a performance anomaly. Threads spend more time acquiring the lock than doing useful work. The OS scheduler moves blocked threads onto available cores. They immediately block again on the GIL. This increases CPU cache traffic and decreases throughput as the thread count rises. We call this the saturation cliff.
 
 \subsection{Novelty and Contributions}
 
@@ -66,7 +66,7 @@ Clipper provides a model serving infrastructure, but targets cloud deployments \
 
 \subsection{Python 3.13 and Free Threading}
 
-The Python community is working to remove the GIL, as seen in PEP 703 \cite{gross2023}. However, our work remains relevant for several reasons. First, the migration of the ecosystem will take years. Major libraries such as NumPy, Pandas, and TensorFlow require extensive auditing for thread safety before they can disable the GIL. Second, oversubscription remains problematic even without the GIL. Running too many threads on a few cores destroys cache locality and increases context switch overhead. Third, our blocking ratio metric provides value beyond GIL detection. It characterizes workload behavior and enables intelligent thread pool sizing regardless of the underlying concurrency model. Finally, edge devices will continue running older Python versions for the foreseeable future due to conservative update policies in embedded systems.
+The Python community is working to remove the GIL, as seen in PEP 703 \cite{gross2023}. While PEP 703 proposes a No-GIL build, it comes with a single-threaded performance regression ($\sim$1.4$\times$ slower) and is not yet default for constrained edge distributions. However, our work remains relevant for several reasons. First, the migration of the ecosystem will take years. Major libraries such as NumPy, Pandas, and TensorFlow require extensive auditing for thread safety before they can disable the GIL. Second, oversubscription remains problematic even without the GIL. Running too many threads on a few cores destroys cache locality and increases context switch overhead. Third, our blocking ratio metric provides value beyond GIL detection. It characterizes workload behavior and enables intelligent thread pool sizing regardless of the underlying concurrency model. Finally, edge devices will continue running older Python versions for the foreseeable future due to conservative update policies in embedded systems.
 
 \subsection{Limitations}
 
@@ -78,7 +78,7 @@ Our approach has limitations. First, tasks that use C extensions releasing the G
 
 We simulate edge environments by strictly limiting CPU core visibility using \texttt{os.sched\_setaffinity()}. We use a single core simulation to represent devices like the Raspberry Pi Zero. We use a quad-core simulation to represent devices like the Raspberry Pi 4. All experiments were conducted on Ubuntu 22.04 LTS (kernel 5.15) with Python 3.11.4, CPU governor set to \texttt{performance}, and frequency scaling disabled. The simulation approach faithfully reproduces edge device behavior because GIL contention is determined by Python interpreter semantics rather than hardware-specific scheduling. We validated timer resolution using \texttt{clock\_getres(CLOCK\_THREAD\_CPUTIME\_ID)}, confirming sub-microsecond precision ($< 100$ ns) matching ARM Cortex-A72 capabilities.
 
-We employ a synthetic mixed workload. It represents an AI agent pipeline. The workload includes a CPU phase that holds the GIL and an I/O phase that releases it. Let $T_{\text{CPU}} = 10$ ms and $T_{\text{I/O}} = 50$ ms denote the CPU and I/O phases respectively. We measure throughput in tasks per second (TPS) and latency.
+We employ a synthetic mixed workload. It represents an AI agent pipeline. The workload includes a CPU phase that holds the GIL and an I/O phase that releases it. Let $T_{\text{CPU}} = 10$ ms and $T_{\text{I/O}} = 50$ ms denote the CPU and I/O phases respectively. These values approximate the profile of a typical RAG orchestration task: $10$ ms represents the CPU cost of parsing a complex JSON response or tokenizing a query, while $50$ ms represents the network Round Trip Time (RTT) to a vector database or upstream API. We measure throughput in tasks per second (TPS) and latency.
 
 \subsection{Thread Count Range}
 
@@ -123,6 +123,12 @@ While our experiments utilize x86 hardware constrained to match edge device core
 \section{The OS GIL Paradox}
 
 Our experiments reveal a counterintuitive finding. Adding more cores does not solve the GIL problem. It often makes it worse. Both single core and quad core configurations suffer approximately $33\%$ throughput degradation at high thread counts. This confirms the OS GIL Paradox. The OS scheduler assumes that a runnable thread should be scheduled on an available core. However, the Python interpreter dictates that only one thread can execute bytecode at any instant.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{fig_os_gil_paradox.png}}
+\caption{The OS GIL Paradox. The OS scheduler distributes threads across cores (A), but the GIL serializes execution (B), causing threads to rapidly wake up, fail to acquire the lock, and sleep again. This ``fight'' generates excessive context switch overhead (C) that degrades performance below single-core baselines.}
+\label{fig:os_gil_paradox}
+\end{figure}
 
 \subsection{Single-Core Saturation Results}
 
@@ -333,6 +339,12 @@ Algorithm~\ref{alg:adaptive_controller} presents the core control loop.
 The algorithm incorporates four key mechanisms. First, the VETO mechanism (line 16) prevents scale-up when $\beta_{\text{ewma}} \leq \beta_{\text{thresh}}$ (default $0.3$), indicating CPU saturation or GIL contention. Second, EWMA smoothing (line 7) with $\alpha = 0.2$ prevents oscillation from noisy $\beta$ samples; this value provides a $5$-sample effective window ($1/\alpha$), balancing responsiveness with stability. Third, hysteresis (lines 11--14) with $H = 3$ consecutive signals required before scaling prevents rapid fluctuations. Fourth, the conservative step size of $+1$ (line 13) ensures gradual ramp-up, avoiding overshoot into the saturation cliff; we chose $+1$ over $+2$ to prioritize stability, though faster ramp-up is possible if latency sensitivity permits. The monitoring interval $\Delta t = 500$ ms captures sufficient task completions per sample (typically $50$--$200$ tasks at steady state) while remaining responsive to workload shifts. We set $\beta_{\text{thresh}} = 0.3$ based on a parameter sweep (see Section VI-D) showing stable performance across diverse workload ratios.
 
 \section{Evaluation}
+
+\subsection{Benchmarking Scope: Control Plane vs. Data Plane}
+
+It is critical to differentiate between \textit{Inference Throughput} (Data Plane) and \textit{Orchestration Throughput} (Control Plane). While complete RAG latency is dominated by model inference (normally 10--50 tokens/sec), the reliability of an edge agent depends on the orchestration layer's ability to manage concurrent I/O streams (like sensor interrupts, and WebSocket frames) without stalling.
+
+Our experiments utilizing high frequency micro-tasks ($T_{\text{CPU}}=10$ ms) serve to stress test the \textbf{Python Scheduler itself}. The reported 37k TPS represents the theoretical upper bound of the runtime's event handling capacity. We demonstrate that GIL induced thrashing can paralyze this control plane long before the AI accelerator reaches its compute limit.
 
 \subsection{Experimental Configuration}
 
