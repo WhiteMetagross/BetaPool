@@ -20,10 +20,11 @@ import asyncio
 import psutil
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
-from typing import List, Dict, Callable
+from typing import List, Dict, Callable, Tuple
 from multiprocessing import cpu_count
 from queue import Queue
 from threading import Thread, Lock
+from scipy import stats
 
 # Set seed for reproducibility.
 SEED = 17
@@ -31,7 +32,8 @@ random.seed(SEED)
 
 # Experiment parameters.
 TASK_COUNT = 10000
-RUNS_PER_CONFIG = 3
+RUNS_PER_CONFIG = 10       # n=10 runs for statistical significance (Section 3.3).
+CONFIDENCE_LEVEL = 0.95    # 95% confidence interval.
 CPU_ITERATIONS = 1000
 IO_SLEEP_MS = 0.1
 
@@ -47,6 +49,52 @@ class BaselineResult:
     p99LatMs: float
     memoryMb: float
     cpuPercent: float
+    rawLatencies: List[float] = None  # Raw latencies for pooled P99
+
+
+def computeCI(data: List[float], confidence: float = 0.95) -> Tuple[float, float]:
+    """Compute mean and CI margin using t-distribution (Section 3.3)."""
+    n = len(data)
+    if n < 2:
+        return (data[0] if data else 0.0, 0.0)
+    mean = statistics.mean(data)
+    std = statistics.stdev(data)
+    stderr = std / (n ** 0.5)
+    t_value = stats.t.ppf((1 + confidence) / 2, n - 1)
+    margin = t_value * stderr
+    return (mean, margin)
+
+
+def computePooledP99(allLatencies: List[List[float]]) -> float:
+    """Compute pooled P99 by aggregating per-task samples across runs (Section 3.3)."""
+    pooled = []
+    for runLats in allLatencies:
+        if runLats:
+            pooled.extend(runLats)
+    if not pooled:
+        return 0.0
+    pooled.sort()
+    idx = int(len(pooled) * 0.99)
+    return pooled[idx] * 1000  # Convert to ms
+
+
+def computeP99Stats(allLatencies: List[List[float]]) -> Tuple[float, float]:
+    """Compute per-run P99 median ± IQR (Section 3.3)."""
+    perRunP99 = []
+    for runLats in allLatencies:
+        if runLats:
+            sortedLats = sorted(runLats)
+            idx = int(len(sortedLats) * 0.99)
+            perRunP99.append(sortedLats[idx] * 1000)
+    if not perRunP99:
+        return (0.0, 0.0)
+    perRunP99.sort()
+    n = len(perRunP99)
+    median = statistics.median(perRunP99)
+    q1 = perRunP99[n // 4] if n >= 4 else perRunP99[0]
+    q3 = perRunP99[3 * n // 4] if n >= 4 else perRunP99[-1]
+    iqr = q3 - q1
+    return (median, iqr)
 
 
 def getMemoryUsageMb() -> float:
@@ -165,6 +213,7 @@ def runThreadPoolBenchmark(numThreads: int, taskCount: int) -> Dict:
     elapsed = time.perf_counter() - startTime
     memAfter = getMemoryUsageMb()
     
+    rawLatencies = latencies.copy()  # Keep raw for pooled P99
     latenciesMs = [lat * 1000 for lat in latencies]
     latenciesMs.sort()
     
@@ -173,6 +222,7 @@ def runThreadPoolBenchmark(numThreads: int, taskCount: int) -> Dict:
         "avgLatMs": statistics.mean(latenciesMs),
         "p99LatMs": latenciesMs[int(len(latenciesMs) * 0.99)],
         "memoryMb": memAfter - memBefore,
+        "rawLatencies": rawLatencies,
     }
 
 
@@ -270,12 +320,14 @@ def main():
     print("=" * 80)
     print()
     print(f"Task count: {TASK_COUNT}")
-    print(f"Runs per config: {RUNS_PER_CONFIG}")
+    print(f"Runs per config: {RUNS_PER_CONFIG} (n=10 as per Section 3.3)")
+    print(f"Confidence: {CONFIDENCE_LEVEL*100:.0f}% CI using t-distribution")
     print(f"CPU iterations: {CPU_ITERATIONS}")
     print(f"IO sleep: {IO_SLEEP_MS} ms")
     print()
     
     results = []
+    aggregatedResults = {}  # strategy -> {tpsMean, tpsMargin, p99Pooled, ...}
     
     # 1. Standard ThreadPoolExecutor at various thread counts.
     print("Testing: ThreadPoolExecutor (static)")
@@ -283,6 +335,7 @@ def main():
     
     for threads in [16, 32, 64, 128, 256]:
         runResults = []
+        allLatencies = []
         for run in range(RUNS_PER_CONFIG):
             config = runThreadPoolBenchmark(threads, TASK_COUNT)
             results.append(BaselineResult(
@@ -294,12 +347,22 @@ def main():
                 p99LatMs=config["p99LatMs"],
                 memoryMb=config["memoryMb"],
                 cpuPercent=0.0,
+                rawLatencies=config["rawLatencies"],
             ))
             runResults.append(config)
+            allLatencies.append(config["rawLatencies"])
         
-        avgTps = statistics.mean([r["tps"] for r in runResults])
+        tpsMean, tpsMargin = computeCI([r["tps"] for r in runResults], CONFIDENCE_LEVEL)
+        p99Pooled = computePooledP99(allLatencies)
+        p99Median, p99IQR = computeP99Stats(allLatencies)
         avgMem = statistics.mean([r["memoryMb"] for r in runResults])
-        print(f"  {threads} threads: {avgTps:,.0f} TPS, {avgMem:.1f} MB memory delta")
+        
+        aggregatedResults[f"ThreadPool-{threads}"] = {
+            "tpsMean": tpsMean, "tpsMargin": tpsMargin,
+            "p99Pooled": p99Pooled, "p99Median": p99Median, "p99IQR": p99IQR,
+            "avgMem": avgMem, "nRuns": RUNS_PER_CONFIG,
+        }
+        print(f"  {threads} threads: {tpsMean:,.0f}±{tpsMargin:,.0f} TPS, P99={p99Pooled:.1f}ms, {avgMem:.1f} MB")
     
     # 2. ProcessPoolExecutor with memory overhead.
     print()
@@ -322,9 +385,15 @@ def main():
             ))
             runResults.append(config)
         
-        avgTps = statistics.mean([r["tps"] for r in runResults])
+        tpsMean, tpsMargin = computeCI([r["tps"] for r in runResults], CONFIDENCE_LEVEL)
         avgMem = statistics.mean([r["memoryMb"] for r in runResults])
-        print(f"  {workers} workers: {avgTps:,.0f} TPS, {avgMem:.1f} MB memory overhead")
+        avgP99 = statistics.mean([r["p99LatMs"] for r in runResults])
+        
+        aggregatedResults[f"ProcessPool-{workers}"] = {
+            "tpsMean": tpsMean, "tpsMargin": tpsMargin,
+            "p99Pooled": avgP99, "avgMem": avgMem, "nRuns": RUNS_PER_CONFIG,
+        }
+        print(f"  {workers} workers: {tpsMean:,.0f}±{tpsMargin:,.0f} TPS, {avgMem:.1f} MB memory overhead")
     
     # 3. Asyncio event loop.
     print()
@@ -347,9 +416,15 @@ def main():
             ))
             runResults.append(config)
         
-        avgTps = statistics.mean([r["tps"] for r in runResults])
+        tpsMean, tpsMargin = computeCI([r["tps"] for r in runResults], CONFIDENCE_LEVEL)
         avgMem = statistics.mean([r["memoryMb"] for r in runResults])
-        print(f"  Concurrency {concurrency}: {avgTps:,.0f} TPS, {avgMem:.1f} MB memory delta")
+        avgP99 = statistics.mean([r["p99LatMs"] for r in runResults])
+        
+        aggregatedResults[f"Asyncio-{concurrency}"] = {
+            "tpsMean": tpsMean, "tpsMargin": tpsMargin,
+            "p99Pooled": avgP99, "avgMem": avgMem, "nRuns": RUNS_PER_CONFIG,
+        }
+        print(f"  Concurrency {concurrency}: {tpsMean:,.0f}±{tpsMargin:,.0f} TPS, {avgMem:.1f} MB memory delta")
     
     # 4. Queue depth based scaler.
     print()
@@ -372,9 +447,15 @@ def main():
             ))
             runResults.append(config)
         
-        avgTps = statistics.mean([r["tps"] for r in runResults])
+        tpsMean, tpsMargin = computeCI([r["tps"] for r in runResults], CONFIDENCE_LEVEL)
         finalWorkers = runResults[-1]["finalWorkers"]
-        print(f"  Range {minW}-{maxW}: {avgTps:,.0f} TPS, settled at {finalWorkers} workers")
+        avgP99 = statistics.mean([r["p99LatMs"] for r in runResults])
+        
+        aggregatedResults[f"QueueScaler-{minW}-{maxW}"] = {
+            "tpsMean": tpsMean, "tpsMargin": tpsMargin,
+            "p99Pooled": avgP99, "finalWorkers": finalWorkers, "nRuns": RUNS_PER_CONFIG,
+        }
+        print(f"  Range {minW}-{maxW}: {tpsMean:,.0f}±{tpsMargin:,.0f} TPS, settled at {finalWorkers} workers")
     
     # Save results.
     os.makedirs("results", exist_ok=True)
@@ -390,29 +471,41 @@ def main():
                 r.tps, r.avgLatMs, r.p99LatMs, r.memoryMb
             ])
     
+    # Save aggregated results with CI.
+    with open("results/baseline_comparison_with_ci.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["strategy", "tps_mean", "tps_margin", "p99_pooled", "avg_mem", "n_runs"])
+        for strategy, data in aggregatedResults.items():
+            writer.writerow([
+                strategy, f"{data['tpsMean']:.0f}", f"{data['tpsMargin']:.0f}",
+                f"{data.get('p99Pooled', 0):.1f}", f"{data.get('avgMem', 0):.1f}", data['nRuns']
+            ])
+    
     # Print summary.
     print()
     print("=" * 80)
-    print("SUMMARY")
+    print("SUMMARY (with 95% CI)")
     print("=" * 80)
     print()
     
-    # Aggregate by strategy.
-    strategies = {}
-    for r in results:
-        key = r.strategy
-        if key not in strategies:
-            strategies[key] = []
-        strategies[key].append(r)
+    print(f"{'Strategy':<25} | {'TPS (mean±CI)':<20} | {'P99 (ms)':<12} | {'Memory (MB)':<12}")
+    print("-" * 75)
     
-    print(f"{'Strategy':<25} | {'Avg TPS':<12} | {'P99 Lat (ms)':<12} | {'Memory (MB)':<12}")
-    print("-" * 70)
+    for strategy, data in sorted(aggregatedResults.items()):
+        tpsStr = f"{data['tpsMean']:,.0f}±{data['tpsMargin']:,.0f}"
+        print(f"{strategy:<25} | {tpsStr:<20} | {data.get('p99Pooled', 0):<12.1f} | {data.get('avgMem', 0):<12.1f}")
     
-    for strategy, runs in sorted(strategies.items()):
-        avgTps = statistics.mean([r.tps for r in runs])
-        avgP99 = statistics.mean([r.p99LatMs for r in runs])
-        avgMem = statistics.mean([r.memoryMb for r in runs])
-        print(f"{strategy:<25} | {avgTps:<12,.0f} | {avgP99:<12.2f} | {avgMem:<12.1f}")
+    # Generate Table 7 LaTeX snippet.
+    print()
+    print("LaTeX Table Snippet (for Table 7 - Solution Comparison):")
+    print("-" * 60)
+    # Static Naive = ThreadPool-256, Static Optimal = ThreadPool-32, Adaptive ~ ThreadPool-32 with controller
+    if "ThreadPool-256" in aggregatedResults:
+        d = aggregatedResults["ThreadPool-256"]
+        print(f"Static Naive & 256 (fixed) & {d['tpsMean']:,.0f} $\\pm$ {d['tpsMargin']:,.0f} & {d['p99Pooled']:.1f} & -X\% \\\\")
+    if "ThreadPool-32" in aggregatedResults:
+        d = aggregatedResults["ThreadPool-32"]
+        print(f"Static Optimal & 32 (fixed) & {d['tpsMean']:,.0f} $\\pm$ {d['tpsMargin']:,.0f} & {d['p99Pooled']:.1f} & Baseline \\\\")
     
     print()
     print("Key Findings:")
@@ -421,7 +514,9 @@ def main():
     print("  3. Queue depth scaler overscales without GIL awareness, hitting the cliff.")
     print("  4. Beta based veto mechanism (our approach) prevents overscaling.")
     print()
-    print("Results saved to results/baseline_comparison.csv")
+    print("Results saved to:")
+    print("  results/baseline_comparison.csv")
+    print("  results/baseline_comparison_with_ci.csv")
     
     return 0
 

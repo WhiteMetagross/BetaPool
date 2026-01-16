@@ -1,0 +1,91 @@
+{
+  "python_version": "3.13.3 (tags/v3.13.3:6280bb5, Apr  8 2025, 14:47:33) [MSC v.1943 64 bit (AMD64)]",
+  "gil_enabled": true,
+  "cpu_count": 24,
+  "config": {
+    "num_tasks": 500,
+    "cpu_ms": 10,
+    "io_ms": 50
+  },
+  "results": [
+    {
+      "thread_count": 1,
+      "tps": 15.87,
+      "p99_latency_ms": 31260.87,
+      "mean_latency_ms": 15809.55,
+      "total_tasks": 500,
+      "elapsed_sec": 31.51
+    },
+    {
+      "thread_count": 4,
+      "tps": 61.73,
+      "p99_latency_ms": 8002.4,
+      "mean_latency_ms": 4010.28,
+      "total_tasks": 500,
+      "elapsed_sec": 8.1
+    },
+    {
+      "thread_count": 8,
+      "tps": 62.75,
+      "p99_latency_ms": 7768.46,
+      "mean_latency_ms": 4070.95,
+      "total_tasks": 500,
+      "elapsed_sec": 7.97
+    },
+    {
+      "thread_count": 16,
+      "tps": 61.9,
+      "p99_latency_ms": 6894.01,
+      "mean_latency_ms": 3725.13,
+      "total_tasks": 500,
+      "elapsed_sec": 8.08
+    },
+    {
+      "thread_count": 32,
+      "tps": 62.26,
+      "p99_latency_ms": 4124.21,
+      "mean_latency_ms": 2984.08,
+      "total_tasks": 500,
+      "elapsed_sec": 8.03
+    },
+    {
+      "thread_count": 64,
+      "tps": 57.65,
+      "p99_latency_ms": 8402.11,
+      "mean_latency_ms": 4329.23,
+      "total_tasks": 500,
+      "elapsed_sec": 8.67
+    },
+    {
+      "thread_count": 128,
+      "tps": 56.55,
+      "p99_latency_ms": 8227.38,
+      "mean_latency_ms": 4225.35,
+      "total_tasks": 500,
+      "elapsed_sec": 8.84
+    },
+    {
+      "thread_count": 256,
+      "tps": 61.43,
+      "p99_latency_ms": 7875.24,
+      "mean_latency_ms": 4064.99,
+      "total_tasks": 500,
+      "elapsed_sec": 8.14
+    },
+    {
+      "thread_count": 512,
+      "tps": 62.61,
+      "p99_latency_ms": 7343.39,
+      "mean_latency_ms": 3726.93,
+      "total_tasks": 500,
+      "elapsed_sec": 7.99
+    }
+  ],
+  "summary": {
+    "optimal_threads": 8,
+    "optimal_tps": 62.75,
+    "worst_threads": 128,
+    "worst_tps": 56.55,
+    "degradation_pct": 9.88
+  }
+}

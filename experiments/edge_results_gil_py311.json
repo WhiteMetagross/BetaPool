@@ -1,0 +1,187 @@
+{
+  "python_version": "3.11.13 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 13:03:15) [MSC v.1929 64 bit (AMD64)]",
+  "gil_enabled": true,
+  "platform": "win32",
+  "results": [
+    {
+      "cores": 1,
+      "threads": 1,
+      "tps": 15.0,
+      "p99_ms": 1015.32,
+      "avg_latency_ms": 727.21,
+      "completed_tasks": 459,
+      "affinity_set": true
+    },
+    {
+      "cores": 1,
+      "threads": 2,
+      "tps": 28.6,
+      "p99_ms": 1022.78,
+      "avg_latency_ms": 710.3,
+      "completed_tasks": 875,
+      "affinity_set": true
+    },
+    {
+      "cores": 1,
+      "threads": 4,
+      "tps": 52.6,
+      "p99_ms": 1392.16,
+      "avg_latency_ms": 741.87,
+      "completed_tasks": 1609,
+      "affinity_set": true
+    },
+    {
+      "cores": 1,
+      "threads": 8,
+      "tps": 53.7,
+      "p99_ms": 2295.11,
+      "avg_latency_ms": 1413.65,
+      "completed_tasks": 1673,
+      "affinity_set": true
+    },
+    {
+      "cores": 1,
+      "threads": 16,
+      "tps": 48.8,
+      "p99_ms": 4763.65,
+      "avg_latency_ms": 2995.21,
+      "completed_tasks": 1569,
+      "affinity_set": true
+    },
+    {
+      "cores": 1,
+      "threads": 32,
+      "tps": 35.7,
+      "p99_ms": 15154.55,
+      "avg_latency_ms": 7635.85,
+      "completed_tasks": 1376,
+      "affinity_set": true
+    },
+    {
+      "cores": 1,
+      "threads": 64,
+      "tps": 30.4,
+      "p99_ms": 20852.35,
+      "avg_latency_ms": 13140.22,
+      "completed_tasks": 918,
+      "affinity_set": true
+    },
+    {
+      "cores": 1,
+      "threads": 128,
+      "tps": 28.7,
+      "p99_ms": 28819.47,
+      "avg_latency_ms": 13494.89,
+      "completed_tasks": 885,
+      "affinity_set": true
+    },
+    {
+      "cores": 1,
+      "threads": 256,
+      "tps": 34.3,
+      "p99_ms": 29172.87,
+      "avg_latency_ms": 14142.0,
+      "completed_tasks": 1073,
+      "affinity_set": true
+    },
+    {
+      "cores": 1,
+      "threads": 512,
+      "tps": 42.0,
+      "p99_ms": 28586.68,
+      "avg_latency_ms": 12282.12,
+      "completed_tasks": 1284,
+      "affinity_set": true
+    },
+    {
+      "cores": 4,
+      "threads": 1,
+      "tps": 15.8,
+      "p99_ms": 728.38,
+      "avg_latency_ms": 689.97,
+      "completed_tasks": 484,
+      "affinity_set": true
+    },
+    {
+      "cores": 4,
+      "threads": 4,
+      "tps": 61.7,
+      "p99_ms": 718.5,
+      "avg_latency_ms": 632.58,
+      "completed_tasks": 1889,
+      "affinity_set": true
+    },
+    {
+      "cores": 4,
+      "threads": 8,
+      "tps": 62.8,
+      "p99_ms": 1624.94,
+      "avg_latency_ms": 1206.51,
+      "completed_tasks": 1953,
+      "affinity_set": true
+    },
+    {
+      "cores": 4,
+      "threads": 16,
+      "tps": 62.2,
+      "p99_ms": 3726.9,
+      "avg_latency_ms": 2417.24,
+      "completed_tasks": 1873,
+      "affinity_set": true
+    },
+    {
+      "cores": 4,
+      "threads": 32,
+      "tps": 62.3,
+      "p99_ms": 7667.38,
+      "avg_latency_ms": 4643.86,
+      "completed_tasks": 2081,
+      "affinity_set": true
+    },
+    {
+      "cores": 4,
+      "threads": 64,
+      "tps": 63.1,
+      "p99_ms": 16230.73,
+      "avg_latency_ms": 8313.22,
+      "completed_tasks": 2113,
+      "affinity_set": true
+    },
+    {
+      "cores": 4,
+      "threads": 128,
+      "tps": 63.0,
+      "p99_ms": 20345.32,
+      "avg_latency_ms": 13366.43,
+      "completed_tasks": 1917,
+      "affinity_set": true
+    },
+    {
+      "cores": 4,
+      "threads": 256,
+      "tps": 62.6,
+      "p99_ms": 30826.84,
+      "avg_latency_ms": 15923.88,
+      "completed_tasks": 1948,
+      "affinity_set": true
+    },
+    {
+      "cores": 4,
+      "threads": 512,
+      "tps": 63.0,
+      "p99_ms": 30781.42,
+      "avg_latency_ms": 16000.09,
+      "completed_tasks": 1960,
+      "affinity_set": true
+    },
+    {
+      "cores": 4,
+      "threads": 1024,
+      "tps": 62.5,
+      "p99_ms": 30138.33,
+      "avg_latency_ms": 15577.67,
+      "completed_tasks": 1906,
+      "affinity_set": true
+    }
+  ]
+}

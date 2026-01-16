@@ -1,384 +1,568 @@
-# Usage Guide:
+# 📘 Usage Guide
 
-This document provides comprehensive instructions for running the GIL Saturation Cliff experiments and using the Adaptive Thread Pool in your own applications.
+Comprehensive usage instructions for the BetaPool library.
 
+**Author:** Mridankan Mandal
 
-## Table of Contents:
+## 📑 Table of Contents
 
-1. [Prerequisites](#prerequisites).
-2. [Quick Start](#quick-start).
-3. [Running Experiments](#running-experiments).
-4. [Docker Reproducibility](#docker-reproducibility).
-5. [Platform-Specific Instructions](#platform-specific-instructions).
-6. [Using the Adaptive Executor](#using-the-adaptive-executor).
-7. [Generating Figures](#generating-figures).
-8. [Troubleshooting](#troubleshooting).
+1. [Installation](#-installation)
+2. [Basic Usage](#-basic-usage)
+3. [Configuration](#-configuration)
+4. [Monitoring and Metrics](#-monitoring-and-metrics)
+5. [Workload Generators](#-workload-generators)
+6. [Advanced Usage](#-advanced-usage)
+7. [Best Practices](#-best-practices)
+8. [Troubleshooting](#-troubleshooting)
 
+## 📦 Installation
 
-## Prerequisites:
+**Prerequisites:**
 
-### System Requirements:
+- Python 3.11 or higher.
+- pip package manager.
 
-- Python 3.8 or higher.
-- Linux environment recommended (WSL2 on Windows works well).
-- Minimum 2GB RAM for benchmarks.
-- Docker (optional, for reproducible experiments).
-
-### Python Dependencies:
-
-Install the required packages using pip:
+**Install from Source:**
 
 ```bash
-pip install -r requirements.txt
+# Clone the repository.
+git clone https://github.com/WhiteMetagross/BetaPool.git
+cd BetaPool
+
+# Install in development mode.
+pip install -e .
+
+# Or install with all optional dependencies.
+pip install -e ".[all]"
 ```
 
-The requirements include:
-
-- `psutil` - System monitoring.
-- `matplotlib` - Figure generation.
-- `numpy` - Numerical operations (optional, for extended workloads).
-
-
-## Quick Start:
-
-### Running a Basic Experiment:
+**Install Optional Dependencies:**
 
 ```bash
-# Clone the repository.:
-git clone https://github.com/yourusername/edge-gil.git
-cd edge-gil
+# NumPy support for workload generators.
+pip install betapool[numpy]
 
-# Install dependencies.:
-pip install -r requirements.txt
+# Visualization support.
+pip install betapool[visualization]
 
-# Run the single-core experiment (recommended for strongest signal).:
-python experiments/singleCoreBenchmark.py
-
-# Generate publication figures.:
-python experiments/generateFigures.py
+# Development tools.
+pip install betapool[dev]
 ```
 
-### Expected Output:
-
-The experiment will output a table showing throughput and latency at different thread counts. You should observe:
-
-- Peak throughput at 16-32 threads.
-- Declining throughput beyond the peak (the saturation cliff).
-- Results saved to CSV files in the `results/` directory.
-
-
-## Running Experiments:
-
-### Single-Core Benchmark:
-
-Simulates a single-core edge device (Raspberry Pi Zero, containerized workload):
-
-```bash
-python experiments/singleCoreBenchmark.py
-```
-
-This benchmark uses `os.sched_setaffinity()` to pin execution to one CPU core.
-
-### Quad-Core Benchmark:
-
-Simulates a quad-core edge device (Raspberry Pi 4, Jetson Nano):
-
-```bash
-python experiments/quadCoreBenchmark.py
-```
-
-This demonstrates that the saturation cliff persists even on multi-core hardware.
-
-### Instrumentation Overhead Benchmark:
-
-Measures the cost of blocking ratio instrumentation:
-
-```bash
-python experiments/instrumentationOverhead.py
-```
-
-This benchmark validates that instrumentation adds less than 0.3% overhead to typical workloads.
-
-### Workload Parameter Sweep:
-
-Tests robustness across different CPU/IO ratios:
-
-```bash
-python experiments/workloadSweep.py
-```
-
-This experiment demonstrates that optimal thread count varies with workload characteristics and validates the beta threshold parameter.
-
-### Baseline Comparison:
-
-Compares against alternative concurrency strategies:
-
-```bash
-python experiments/baselineComparison.py
-```
-
-This compares threading against multiprocessing, asyncio, and queue depth based scalers.
-
-### Controller Timeline:
-
-Captures detailed controller behavior over time:
-
-```bash
-python experiments/controllerTimeline.py
-```
-
-This experiment records thread count adjustments, blocking ratio, and veto events for visualization.
-
-### Understanding the Output:
-
-The benchmark displays a table with these columns:
-
-| Column | Description |
-|--------|-------------|
-| Threads | Number of worker threads in the pool. |
-| TPS | Throughput in tasks per second. |
-| Avg Lat | Average task latency in milliseconds. |
-| P99 Lat | 99th percentile latency. |
-| Status | OK, DECLINE, DROP, or CLIFF based on degradation. |
-
-
-## Docker Reproducibility:
-
-### Building Docker Images:
-
-```bash
-cd docker
-
-# Build the base image.:
-docker build -t edge-gil:latest -f Dockerfile ..
-
-# Build single-core simulation.:
-docker build -t edge-gil:singlecore -f Dockerfile.singleCore ..
-
-# Build quad-core simulation.:
-docker build -t edge-gil:quadcore -f Dockerfile.quadCore ..
-```
-
-### Running with Docker:
-
-Single-core simulation (1 CPU, 512MB RAM):
-
-```bash
-docker run --cpus="1.0" --memory="512m" -v $(pwd)/results:/app/results edge-gil:singlecore
-```
-
-Quad-core simulation (4 CPUs, 2GB RAM):
-
-```bash
-docker run --cpus="4.0" --memory="2g" -v $(pwd)/results:/app/results edge-gil:quadcore
-```
-
-### Using Docker Compose:
-
-Run all experiments in sequence:
-
-```bash
-cd docker
-docker-compose up all
-```
-
-Run experiments separately:
-
-```bash
-docker-compose up singlecore
-docker-compose up quadcore
-docker-compose up figures
-```
-
-Results will be saved to the `results/` and `figures/` directories on your host machine.
-
-
-## Platform-Specific Instructions:
-
-### Raspberry Pi 4:
-
-1. Ensure you are running Raspberry Pi OS (64-bit recommended).
-2. Install Python dependencies:
-
-```bash
-sudo apt update
-sudo apt install python3-pip
-pip3 install psutil matplotlib
-```
-
-3. Run the dedicated benchmark:
-
-```bash
-python3 platforms/raspberryPiBenchmark.py
-```
-
-4. For comprehensive resource metrics including memory and power estimates:
-
-```bash
-python3 platforms/enhancedDeviceBenchmark.py
-```
-
-5. Expected cliff severity: 30 to 50% degradation at high thread counts.
-
-### NVIDIA Jetson Nano:
-
-1. Ensure JetPack SDK is installed.
-2. Install dependencies:
-
-```bash
-pip3 install psutil matplotlib
-```
-
-3. Run the dedicated benchmark:
-
-```bash
-python3 platforms/jetsonNanoBenchmark.py
-```
-
-4. The benchmark includes thermal monitoring to detect throttling.
-
-### Windows (WSL2):
-
-1. Enable WSL2 and install Ubuntu.
-2. Run experiments inside WSL2 for accurate CPU affinity:
-
-```bash
-wsl python3 experiments/singleCoreBenchmark.py
-```
-
-3. Native Windows may show weaker cliff due to different scheduler behavior.
-
-
-## Using the Adaptive Executor:
-
-### Basic Usage:
+**Verify Installation:**
 
 ```python
-from src.adaptiveExecutor import AdaptiveThreadPoolExecutor
+import betapool
+print(betapool.__version__)  # Should print "1.0.0".
+```
 
-# Create an adaptive executor with bounds.:
-with AdaptiveThreadPoolExecutor(minWorkers=4, maxWorkers=64) as executor:
-    # Submit tasks as you would with ThreadPoolExecutor.:
-    futures = [executor.submit(myTask, arg) for arg in myArgs]
+## 🚀 Basic Usage
+
+**Simple Task Execution:**
+
+```python
+from betapool import AdaptiveThreadPoolExecutor
+
+def process_item(item):
+    # Your processing logic here.
+    return item * 2
+
+# Use as a context manager (recommended).
+with AdaptiveThreadPoolExecutor(min_workers=4, max_workers=32) as executor:
+    # Submit individual tasks.
+    future = executor.submit(process_item, 42)
+    result = future.result()
+    print(f"Result: {result}")  # Output: Result: 84.
+```
+
+**Batch Processing with map():**
+
+```python
+from betapool import AdaptiveThreadPoolExecutor
+
+def process_data(x):
+    # Simulate some work.
+    import time
+    time.sleep(0.01)
+    return x ** 2
+
+data = list(range(100))
+
+with AdaptiveThreadPoolExecutor(min_workers=4, max_workers=32) as executor:
+    results = list(executor.map(process_data, data))
+    print(f"Processed {len(results)} items")
+```
+
+**Mixed Workload Example:**
+
+```python
+from betapool import AdaptiveThreadPoolExecutor
+import time
+import math
+
+def io_task():
+    """Simulates an I/O-bound operation."""
+    time.sleep(0.05)  # Network call, file I/O, etc.
+    return "io_done"
+
+def cpu_task():
+    """Simulates a CPU-bound operation."""
+    result = 0.0
+    for i in range(100000):
+        result += math.sin(i)
+    return result
+
+with AdaptiveThreadPoolExecutor(min_workers=4, max_workers=64) as executor:
+    futures = []
     
-    # Collect results.:
+    # Submit mixed workload.
+    for i in range(50):
+        if i % 2 == 0:
+            futures.append(executor.submit(io_task))
+        else:
+            futures.append(executor.submit(cpu_task))
+    
+    # Wait for all results.
     results = [f.result() for f in futures]
+    
+    # Check metrics.
+    metrics = executor.get_metrics()
+    print(f"Blocking ratio: {metrics['avg_blocking_ratio']:.2f}")
 ```
 
-### Configuration:
+## ⚙️ Configuration
+
+**ControllerConfig Parameters:**
 
 ```python
-from src.adaptiveExecutor import AdaptiveThreadPoolExecutor, ControllerConfig
+from betapool import AdaptiveThreadPoolExecutor, ControllerConfig
 
-# Custom configuration for specific workloads.:
 config = ControllerConfig(
-    monitorIntervalSec=0.5,      # How often to check metrics.
-    betaHighThreshold=0.7,       # Scale up if blocking ratio exceeds this.
-    betaLowThreshold=0.3,        # Scale down if blocking ratio falls below this.
-    scaleUpStep=2,               # Threads to add when scaling up.
-    scaleDownStep=1,             # Threads to remove when scaling down.
+    # How often the controller evaluates metrics (seconds).
+    monitor_interval_sec=0.5,
+    
+    # Blocking ratio threshold for scaling up (I/O-bound detection).
+    # Higher values mean more waiting on I/O.
+    beta_high_threshold=0.7,
+    
+    # Blocking ratio threshold for scaling down (CPU-bound detection).
+    # Lower values mean more CPU work.
+    beta_low_threshold=0.3,
+    
+    # Number of threads to add when scaling up.
+    scale_up_step=2,
+    
+    # Number of threads to remove when scaling down.
+    scale_down_step=1,
+    
+    # CPU utilization threshold to prevent scaling up.
+    cpu_upper_threshold=85.0,
+    
+    # CPU utilization threshold that may trigger scaling down.
+    cpu_lower_threshold=50.0,
+    
+    # Minimum time between scaling decisions (seconds).
+    stabilization_window_sec=2.0,
+    
+    # Minimum tasks to complete before making scaling decisions.
+    warmup_task_count=10,
 )
+
+with AdaptiveThreadPoolExecutor(
+    min_workers=4,
+    max_workers=64,
+    config=config
+) as executor:
+    # Your workload.
+    pass
+```
+
+**Configuration Presets:**
+
+**I/O-Heavy Workload:**
+
+```python
+io_heavy_config = ControllerConfig(
+    beta_high_threshold=0.8,   # More aggressive scaling for high I/O.
+    beta_low_threshold=0.4,
+    scale_up_step=4,           # Scale up faster.
+    scale_down_step=1,
+)
+```
+
+**CPU-Heavy Workload:**
+
+```python
+cpu_heavy_config = ControllerConfig(
+    beta_high_threshold=0.6,   # More conservative.
+    beta_low_threshold=0.2,
+    scale_up_step=1,
+    scale_down_step=2,         # Scale down faster when CPU-bound.
+)
+```
+
+**Latency-Sensitive Workload:**
+
+```python
+latency_sensitive_config = ControllerConfig(
+    monitor_interval_sec=0.2,          # More frequent checks.
+    stabilization_window_sec=1.0,      # Faster response.
+    warmup_task_count=5,               # Shorter warmup.
+)
+```
+
+## 📊 Monitoring and Metrics
+
+**Getting Current Metrics:**
+
+```python
+with AdaptiveThreadPoolExecutor(min_workers=4, max_workers=64) as executor:
+    # Submit tasks.
+    futures = [executor.submit(task, arg) for arg in args]
+    
+    # Get metrics at any time.
+    metrics = executor.get_metrics()
+    
+    print(f"Current threads: {metrics['current_threads']}")
+    print(f"Min workers: {metrics['min_workers']}")
+    print(f"Max workers: {metrics['max_workers']}")
+    print(f"Total tasks: {metrics['total_tasks']}")
+    print(f"Avg blocking ratio: {metrics['avg_blocking_ratio']:.3f}")
+    print(f"Throughput: {metrics['throughput']:.1f} tasks/sec")
+    print(f"P50 latency: {metrics['p50_latency']*1000:.1f} ms")
+    print(f"P99 latency: {metrics['p99_latency']*1000:.1f} ms")
+    print(f"Scale up count: {metrics['scale_up_count']}")
+    print(f"Scale down count: {metrics['scale_down_count']}")
+```
+
+**Tracking Decision History:**
+
+```python
+with AdaptiveThreadPoolExecutor(min_workers=4, max_workers=64) as executor:
+    # Run workload.
+    for _ in range(100):
+        executor.submit(task)
+    
+    # Get scaling decision history.
+    history = executor.get_decision_history()
+    
+    for decision in history:
+        print(f"Time: {decision['timestamp']:.2f}")
+        print(f"  Threads: {decision['threads_before']} -> {decision['threads_after']}")
+        print(f"  Blocking ratio: {decision['blocking_ratio']:.3f}")
+        print(f"  CPU: {decision['cpu_percent']:.1f}%")
+        print(f"  Decision: {decision['decision']}")
+```
+
+**Experiment Logging:**
+
+```python
+with AdaptiveThreadPoolExecutor(min_workers=4, max_workers=64) as executor:
+    # Run workload.
+    futures = [executor.submit(task, arg) for arg in args]
+    for f in futures:
+        f.result()
+    
+    # Get experiment log for analysis.
+    log = executor.get_experiment_log()
+    
+    # Export to CSV for analysis.
+    import csv
+    with open("experiment_log.csv", "w", newline="") as f:
+        if log:
+            writer = csv.DictWriter(f, fieldnames=log[0].keys())
+            writer.writeheader()
+            writer.writerows(log)
+```
+
+## 🔧 Workload Generators
+
+**Built-in Workload Types:**
+
+```python
+from betapool import WorkloadGenerator
+
+# Pure I/O task (releases GIL during sleep).
+io_task = WorkloadGenerator.io_task(duration_ms=50.0)
+
+# Pure CPU task (holds GIL).
+cpu_task = WorkloadGenerator.cpu_task_python(iterations=100000)
+
+# NumPy CPU task (releases GIL during computation).
+numpy_task = WorkloadGenerator.cpu_task_numpy(matrix_size=100)
+
+# Mixed I/O and CPU task.
+mixed_task = WorkloadGenerator.mixed_task(
+    io_duration_ms=50.0,
+    cpu_iterations=10000
+)
+
+# Fibonacci task (extreme GIL holding).
+fib_task = WorkloadGenerator.fibonacci_task(n=30)
+
+# Variable latency task.
+var_task = WorkloadGenerator.variable_latency_task(
+    min_ms=10.0,
+    max_ms=100.0,
+    cpu_fraction=0.2
+)
+```
+
+**RAG Pipeline Simulation:**
+
+```python
+from betapool import WorkloadGenerator
+
+# Simulates a complete RAG pipeline.
+rag_task = WorkloadGenerator.rag_pipeline_task(
+    network_latency_ms=10.0,      # Initial request receive.
+    vector_db_latency_ms=200.0,   # Vector database query.
+    llm_latency_ms=500.0,         # LLM API call.
+    tokenization_iterations=10000, # CPU work for tokenization.
+    reranking_iterations=20000,    # CPU work for reranking.
+)
+
+with AdaptiveThreadPoolExecutor(min_workers=4, max_workers=32) as executor:
+    # Simulate 10 concurrent RAG requests.
+    futures = [executor.submit(rag_task) for _ in range(10)]
+    results = [f.result() for f in futures]
+    
+    for result in results:
+        print(f"Stages: {result['stages']}")
+```
+
+**Arrival Patterns:**
+
+```python
+from betapool import (
+    AdaptiveThreadPoolExecutor,
+    PoissonArrivalGenerator,
+    BurstArrivalGenerator,
+    WorkloadGenerator,
+)
+
+# Poisson arrivals (steady stream).
+poisson = PoissonArrivalGenerator(rate_per_second=50.0)
+
+# Bursty arrivals.
+bursty = BurstArrivalGenerator(
+    burst_rate_per_second=100.0,
+    quiet_rate_per_second=10.0,
+    burst_duration_sec=5.0,
+    quiet_duration_sec=10.0,
+)
+
+task = WorkloadGenerator.io_task(duration_ms=20.0)
+
+with AdaptiveThreadPoolExecutor(min_workers=4, max_workers=32) as executor:
+    # Run for 30 seconds with Poisson arrivals.
+    import time
+    end_time = time.time() + 30.0
+    
+    while time.time() < end_time:
+        poisson.wait_for_next_arrival()
+        executor.submit(task)
+```
+
+## 🔬 Advanced Usage
+
+**Comparison with Static Thread Pool:**
+
+```python
+from betapool import AdaptiveThreadPoolExecutor, StaticThreadPoolExecutor
+import time
+
+def benchmark(executor_class, **kwargs):
+    start = time.time()
+    
+    with executor_class(**kwargs) as executor:
+        futures = [executor.submit(task, arg) for arg in args]
+        results = [f.result() for f in futures]
+        metrics = executor.get_metrics()
+    
+    elapsed = time.time() - start
+    return elapsed, metrics
+
+# Compare adaptive vs static.
+adaptive_time, adaptive_metrics = benchmark(
+    AdaptiveThreadPoolExecutor,
+    min_workers=4,
+    max_workers=64
+)
+
+static_time, static_metrics = benchmark(
+    StaticThreadPoolExecutor,
+    workers=32
+)
+
+print(f"Adaptive: {adaptive_time:.2f}s, "
+      f"throughput={adaptive_metrics['throughput']:.1f}")
+print(f"Static: {static_time:.2f}s, "
+      f"throughput={static_metrics['throughput']:.1f}")
+```
+
+**Manual Shutdown:**
+
+```python
+from betapool import AdaptiveThreadPoolExecutor
+
+executor = AdaptiveThreadPoolExecutor(min_workers=4, max_workers=32)
+
+try:
+    futures = [executor.submit(task, arg) for arg in args]
+    results = [f.result() for f in futures]
+finally:
+    executor.shutdown(wait=True)  # Wait for pending tasks.
+    # or
+    # executor.shutdown(wait=False)  # Don't wait.
+```
+
+**Integration with Flask:**
+
+```python
+from flask import Flask, request, jsonify
+from betapool import AdaptiveThreadPoolExecutor
+
+app = Flask(__name__)
+
+# Create a global executor.
+executor = AdaptiveThreadPoolExecutor(min_workers=4, max_workers=32)
+
+def heavy_task(data):
+    # Process data.
+    return {"processed": data}
+
+@app.route("/process", methods=["POST"])
+def process():
+    data = request.json
+    future = executor.submit(heavy_task, data)
+    result = future.result(timeout=30.0)
+    return jsonify(result)
+
+@app.route("/metrics")
+def metrics():
+    return jsonify(executor.get_metrics())
+
+@app.teardown_appcontext
+def shutdown_executor(exception=None):
+    executor.shutdown(wait=False)
+
+if __name__ == "__main__":
+    app.run()
+```
+
+## ✅ Best Practices
+
+**1. Choose Appropriate Worker Limits:**
+
+```python
+import os
+
+# min_workers: Usually equal to CPU cores for compute tasks.
+# or slightly higher for I/O tasks.
+min_workers = os.cpu_count() or 4
+
+# max_workers: Depends on workload type.
+# I/O-heavy: Can go much higher (50-200).
+# CPU-heavy: Keep close to core count.
+max_workers = min_workers * 4  # Adjust based on workload.
 
 executor = AdaptiveThreadPoolExecutor(
-    minWorkers=4,
-    maxWorkers=128,
-    config=config,
-    enableLogging=True,
+    min_workers=min_workers,
+    max_workers=max_workers
 )
 ```
 
-### Monitoring:
+**2. Allow Warmup Period:**
 
 ```python
-# Get current state during execution.:
-state = executor.controllerState
-print(f"Current threads: {state.currentThreads}")
-print(f"Scale-up count: {state.scaleUpCount}")
-print(f"Scale-down count: {state.scaleDownCount}")
+# The controller needs some tasks to measure before making decisions.
+config = ControllerConfig(
+    warmup_task_count=20,  # Wait for 20 tasks before scaling.
+)
 ```
 
+**3. Monitor in Production:**
 
-## Generating Figures:
+```python
+import logging
 
-### Publication Figures:
+logging.basicConfig(level=logging.DEBUG)
+
+executor = AdaptiveThreadPoolExecutor(
+    min_workers=4,
+    max_workers=32,
+    enable_logging=True  # Enable debug logging.
+)
+```
+
+**4. Handle Exceptions:**
+
+```python
+from concurrent.futures import Future
+
+with AdaptiveThreadPoolExecutor(min_workers=4, max_workers=32) as executor:
+    futures = [executor.submit(task, arg) for arg in args]
+    
+    for future in futures:
+        try:
+            result = future.result(timeout=30.0)
+        except TimeoutError:
+            print("Task timed out")
+        except Exception as e:
+            print(f"Task failed: {e}")
+```
+
+## 🔧 Troubleshooting
+
+**High Memory Usage:**
+
+If memory usage is high, reduce max_workers:
+
+```python
+# Use fewer threads.
+executor = AdaptiveThreadPoolExecutor(
+    min_workers=2,
+    max_workers=16  # Reduced from default.
+)
+```
+
+**Slow Scaling Response:**
+
+If the executor is slow to respond to workload changes:
+
+```python
+config = ControllerConfig(
+    monitor_interval_sec=0.2,      # More frequent checks.
+    stabilization_window_sec=0.5,  # Shorter stabilization.
+    warmup_task_count=5,           # Shorter warmup.
+)
+```
+
+**Oscillating Thread Count:**
+
+If thread count oscillates frequently:
+
+```python
+config = ControllerConfig(
+    stabilization_window_sec=5.0,  # Longer stabilization.
+    scale_up_step=1,               # Smaller steps.
+    scale_down_step=1,
+)
+```
+
+**psutil Not Available:**
+
+If psutil is not installed:
 
 ```bash
-python experiments/generateFigures.py
+pip install psutil
 ```
 
-This generates figures in the `figures/` directory:
+Or the executor will work without CPU monitoring:
 
-- `fig1_saturation_cliff.pdf` - Main throughput cliff visualization.
-- `fig2_latency_analysis.pdf` - Latency degradation at high thread counts.
-- `fig3_efficiency.pdf` - Per-thread efficiency analysis.
-- `fig4_solution_comparison.pdf` - Adaptive vs static strategies.
-
-### Custom Visualization:
-
-The figure generator uses matplotlib with publication-quality settings. Modify `experiments/generateFigures.py` to customize:
-
-- Color schemes.
-- Figure dimensions.
-- Axis labels and titles.
-- Font sizes.
-
-
-## Troubleshooting:
-
-### No Cliff Detected:
-
-If you observe less than 10% degradation:
-
-1. Ensure you are running on a constrained environment (single or few cores).
-2. On powerful hardware, use Docker with CPU limits.
-3. Try increasing CPU_ITERATIONS to amplify the CPU-bound phase.
-
-### Permission Errors on Linux:
-
-If `sched_setaffinity` fails:
-
-1. Run with elevated privileges: `sudo python3 ...`
-2. Or use Docker which handles CPU constraints at the container level.
-
-### Import Errors:
-
-Ensure the PYTHONPATH includes the project root:
-
-```bash
-export PYTHONPATH=/path/to/edge-gil:$PYTHONPATH
+```python
+# Works without psutil, but CPU-based scaling disabled.
+from betapool import AdaptiveThreadPoolExecutor
+executor = AdaptiveThreadPoolExecutor(min_workers=4, max_workers=32)
 ```
-
-Or run from the project root directory.
-
-### Docker Build Failures:
-
-Ensure Docker has access to the context:
-
-```bash
-cd /path/to/edge-gil
-docker build -t edge-gil -f docker/Dockerfile .
-```
-
-
-## Running Tests:
-
-Unit tests validate the core components:
-
-```bash
-python -m pytest tests/
-```
-
-Or run individual test files:
-
-```bash
-python -m pytest tests/testAdaptiveExecutor.py -v
-```
-
-
-## Contact and Support:
-
-For issues or questions:
-
-1. Open an issue on the GitHub repository.
-2. Check the paper in `docs/paper.md` for theoretical background.
-3. Review `docs/reproducibility.md` for detailed experimental methodology.

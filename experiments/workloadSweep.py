@@ -17,6 +17,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from typing import List, Dict, Tuple
+from scipy import stats
 
 # Set seed for reproducibility.
 SEED = 17
@@ -31,7 +32,8 @@ except (AttributeError, OSError):
 
 # Experiment parameters.
 TASK_COUNT = 10000
-RUNS_PER_CONFIG = 5
+RUNS_PER_CONFIG = 5         # n=5 runs for sweep experiments (Section 3.3).
+CONFIDENCE_LEVEL = 0.95     # 95% confidence interval.
 THREAD_COUNTS = [8, 16, 32, 64, 128, 256]
 
 # CPU/IO ratio configurations to sweep.
@@ -62,6 +64,33 @@ class SweepResult:
     p99LatMs: float
     avgBeta: float
     optimalThreads: int = 0
+    rawLatencies: List[float] = None  # For pooled P99
+
+
+def computeCI(data: List[float], confidence: float = 0.95) -> Tuple[float, float]:
+    """Compute mean and CI margin using t-distribution (Section 3.3)."""
+    n = len(data)
+    if n < 2:
+        return (data[0] if data else 0.0, 0.0)
+    mean = statistics.mean(data)
+    std = statistics.stdev(data)
+    stderr = std / (n ** 0.5)
+    t_value = stats.t.ppf((1 + confidence) / 2, n - 1)
+    margin = t_value * stderr
+    return (mean, margin)
+
+
+def computePooledP99(allLatencies: List[List[float]]) -> float:
+    """Compute pooled P99 by aggregating per-task samples across runs (Section 3.3)."""
+    pooled = []
+    for runLats in allLatencies:
+        if runLats:
+            pooled.extend(runLats)
+    if not pooled:
+        return 0.0
+    pooled.sort()
+    idx = int(len(pooled) * 0.99)
+    return pooled[idx] * 1000  # Convert to ms
 
 
 def createMixedTask(cpuIterations: int, ioSleepMs: float):
@@ -113,6 +142,7 @@ def runSingleConfig(
     
     elapsed = time.perf_counter() - startTime
     
+    rawLatencies = latencies.copy()  # Keep raw for pooled P99
     latenciesMs = [lat * 1000 for lat in latencies]
     latenciesMs.sort()
     
@@ -122,6 +152,7 @@ def runSingleConfig(
         "p99LatMs": latenciesMs[int(len(latenciesMs) * 0.99)],
         "avgBeta": statistics.mean(betas),
         "stdBeta": statistics.stdev(betas) if len(betas) > 1 else 0.0,
+        "rawLatencies": rawLatencies,
     }
 
 
@@ -139,9 +170,10 @@ def findOptimalThreads(cpuIterations: int, ioSleepMs: float) -> int:
     return bestThreads
 
 
-def runWorkloadSweep() -> List[SweepResult]:
-    """Run complete workload parameter sweep."""
+def runWorkloadSweep() -> Tuple[List[SweepResult], Dict]:
+    """Run complete workload parameter sweep. Returns results and aggregated data."""
     results = []
+    aggregatedData = {}  # key: (workloadDesc, threads) -> CI stats
     
     print()
     print("=" * 80)
@@ -149,7 +181,8 @@ def runWorkloadSweep() -> List[SweepResult]:
     print("=" * 80)
     print()
     print(f"Task count per config: {TASK_COUNT}")
-    print(f"Runs per config: {RUNS_PER_CONFIG}")
+    print(f"Runs per config: {RUNS_PER_CONFIG} (n=5 as per Section 3.3 for sweeps)")
+    print(f"Confidence: {CONFIDENCE_LEVEL*100:.0f}% CI using t-distribution")
     print(f"Thread counts: {THREAD_COUNTS}")
     print()
     
@@ -166,11 +199,12 @@ def runWorkloadSweep() -> List[SweepResult]:
         print(f"  Optimal: {optimalThreads} threads")
         print()
         
-        print(f"  {'Threads':<8} | {'TPS':<12} | {'Avg Lat':<10} | {'P99 Lat':<10} | {'Avg Beta':<10}")
+        print(f"  {'Threads':<8} | {'TPS (±CI)':<18} | {'P99 Pooled':<12} | {'Avg Beta':<10}")
         print("  " + "-" * 60)
         
         for threads in THREAD_COUNTS:
             runResults = []
+            allLatencies = []
             for run in range(RUNS_PER_CONFIG):
                 config = runSingleConfig(cpuIter, ioMs, threads, TASK_COUNT)
                 
@@ -185,20 +219,32 @@ def runWorkloadSweep() -> List[SweepResult]:
                     p99LatMs=config["p99LatMs"],
                     avgBeta=config["avgBeta"],
                     optimalThreads=optimalThreads,
+                    rawLatencies=config["rawLatencies"],
                 )
                 results.append(result)
                 runResults.append(config)
+                allLatencies.append(config["rawLatencies"])
             
-            # Display averaged results.
-            avgTps = statistics.mean([r["tps"] for r in runResults])
-            avgLat = statistics.mean([r["avgLatMs"] for r in runResults])
-            avgP99 = statistics.mean([r["p99LatMs"] for r in runResults])
+            # Compute aggregated stats with CI.
+            tpsMean, tpsMargin = computeCI([r["tps"] for r in runResults], CONFIDENCE_LEVEL)
+            p99Pooled = computePooledP99(allLatencies)
             avgBeta = statistics.mean([r["avgBeta"] for r in runResults])
             
+            # Store aggregated data.
+            aggregatedData[(desc, threads)] = {
+                "tpsMean": tpsMean,
+                "tpsMargin": tpsMargin,
+                "p99Pooled": p99Pooled,
+                "avgBeta": avgBeta,
+                "optimalThreads": optimalThreads,
+                "nRuns": RUNS_PER_CONFIG,
+            }
+            
             status = "OPTIMAL" if threads == optimalThreads else ""
-            print(f"  {threads:<8} | {avgTps:<12,.0f} | {avgLat:<10.3f} | {avgP99:<10.3f} | {avgBeta:<10.3f} {status}")
+            tpsStr = f"{tpsMean:,.0f}±{tpsMargin:,.0f}"
+            print(f"  {threads:<8} | {tpsStr:<18} | {p99Pooled:<12.2f} | {avgBeta:<10.3f} {status}")
     
-    return results
+    return results, aggregatedData
 
 
 def runBetaThresholdSensitivity() -> List[Dict]:
@@ -256,11 +302,11 @@ def runBetaThresholdSensitivity() -> List[Dict]:
     return results
 
 
-def saveResults(sweepResults: List[SweepResult], sensitivityResults: List[Dict]):
+def saveResults(sweepResults: List[SweepResult], sensitivityResults: List[Dict], aggregatedData: Dict):
     """Save results to CSV files."""
     os.makedirs("results", exist_ok=True)
     
-    # Save workload sweep results.
+    # Save workload sweep results (raw per-run).
     with open("results/workload_sweep.csv", "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow([
@@ -273,6 +319,19 @@ def saveResults(sweepResults: List[SweepResult], sensitivityResults: List[Dict])
                 r.tps, r.avgLatMs, r.p99LatMs, r.avgBeta, r.optimalThreads
             ])
     
+    # Save aggregated results with CI.
+    with open("results/workload_sweep_with_ci.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["workload_desc", "threads", "tps_mean", "tps_margin", 
+                         "p99_pooled", "avg_beta", "optimal_threads", "n_runs"])
+        for (desc, threads), data in sorted(aggregatedData.items()):
+            writer.writerow([
+                desc, threads, 
+                f"{data['tpsMean']:.0f}", f"{data['tpsMargin']:.0f}",
+                f"{data['p99Pooled']:.2f}", f"{data['avgBeta']:.3f}",
+                data['optimalThreads'], data['nRuns']
+            ])
+    
     # Save sensitivity results.
     with open("results/beta_threshold_sensitivity.csv", "w", newline="") as f:
         writer = csv.writer(f)
@@ -283,11 +342,12 @@ def saveResults(sweepResults: List[SweepResult], sensitivityResults: List[Dict])
     print()
     print("Results saved to:")
     print("  results/workload_sweep.csv")
+    print("  results/workload_sweep_with_ci.csv")
     print("  results/beta_threshold_sensitivity.csv")
 
 
-def printSummary(sweepResults: List[SweepResult]):
-    """Print summary analysis of results."""
+def printSummary(sweepResults: List[SweepResult], aggregatedData: Dict):
+    """Print summary analysis of results with LaTeX table output for Table 13."""
     print()
     print("=" * 80)
     print("SUMMARY ANALYSIS")
@@ -311,7 +371,38 @@ def printSummary(sweepResults: List[SweepResult]):
         optimal = results[0].optimalThreads
         print(f"{desc:<40} | {optimal:<15}")
     
+    # Generate LaTeX table snippet for Table 13.
     print()
+    print("LaTeX Table Snippet (for Table 13 - Workload Generalization):")
+    print("-" * 70)
+    print()
+    
+    # For each workload type, show performance at optimal threads.
+    print("\\begin{tabular}{lccc}")
+    print("\\toprule")
+    print("Workload Profile & Optimal $T$ & TPS ($\\pm$CI) & P99 (ms) \\\\")
+    print("\\midrule")
+    
+    for cpuIter, ioMs, desc in WORKLOAD_CONFIGS:
+        # Find optimal threads for this workload.
+        optimalThreads = None
+        for (d, t), data in aggregatedData.items():
+            if d == desc:
+                optimalThreads = data['optimalThreads']
+                break
+        
+        if optimalThreads:
+            # Get stats at optimal thread count.
+            key = (desc, optimalThreads)
+            if key in aggregatedData:
+                data = aggregatedData[key]
+                shortDesc = desc.split('(')[0].strip()
+                print(f"{shortDesc} & {optimalThreads} & {data['tpsMean']:,.0f} $\\pm$ {data['tpsMargin']:,.0f} & {data['p99Pooled']:.2f} \\\\")
+    
+    print("\\bottomrule")
+    print("\\end{tabular}")
+    print()
+    
     print("Key Finding: Optimal thread count varies with workload characteristics.")
     print("IO-heavy workloads benefit from higher thread counts.")
     print("CPU-heavy workloads require lower thread counts to avoid GIL contention.")
@@ -325,16 +416,16 @@ def main():
     print("#" * 80)
     
     # Run workload sweep.
-    sweepResults = runWorkloadSweep()
+    sweepResults, aggregatedData = runWorkloadSweep()
     
     # Run beta threshold sensitivity analysis.
     sensitivityResults = runBetaThresholdSensitivity()
     
     # Save results.
-    saveResults(sweepResults, sensitivityResults)
+    saveResults(sweepResults, sensitivityResults, aggregatedData)
     
     # Print summary.
-    printSummary(sweepResults)
+    printSummary(sweepResults, aggregatedData)
     
     return 0
 

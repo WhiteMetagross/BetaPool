@@ -1,7 +1,49 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Unit test / coverage reports
 .pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# IDE settings
 .vscode/
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
 *.log
+
+# OS files
 .DS_Store
 Thumbs.db
+Desktop.ini
+
+# Large model files (optional - uncomment if needed)
+# *.onnx
+# *.tflite
+
+# Temporary files
+*.tmp
+*.bak
+*~

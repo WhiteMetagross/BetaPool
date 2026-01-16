@@ -1,0 +1,11 @@
+config,threads,tps_mean,tps_margin,avg_lat_mean,avg_lat_margin,p99_pooled,n_runs
+single-core,1,843,13,1.08,0.01,1.64,10
+single-core,4,3587,20,1.08,0.01,1.54,10
+single-core,16,13134,300,1.20,0.03,1.78,10
+single-core,64,39610,694,1.57,0.03,18.82,10
+single-core,256,63654,2444,2.25,0.17,31.43,10
+quad-core,1,849,6,1.06,0.01,1.59,10
+quad-core,4,3650,13,1.06,0.00,1.38,10
+quad-core,16,13447,74,1.17,0.01,1.50,10
+quad-core,64,41220,775,1.48,0.04,16.39,10
+quad-core,256,53773,3203,1.98,0.32,18.51,10

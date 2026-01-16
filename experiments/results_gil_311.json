@@ -1,0 +1,91 @@
+{
+  "python_version": "3.11.13 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 13:03:15) [MSC v.1929 64 bit (AMD64)]",
+  "gil_enabled": true,
+  "cpu_count": 24,
+  "config": {
+    "num_tasks": 500,
+    "cpu_ms": 10,
+    "io_ms": 50
+  },
+  "results": [
+    {
+      "thread_count": 1,
+      "tps": 15.8,
+      "p99_latency_ms": 31387.9,
+      "mean_latency_ms": 15849.43,
+      "total_tasks": 500,
+      "elapsed_sec": 31.64
+    },
+    {
+      "thread_count": 4,
+      "tps": 61.56,
+      "p99_latency_ms": 8023.08,
+      "mean_latency_ms": 4066.53,
+      "total_tasks": 500,
+      "elapsed_sec": 8.12
+    },
+    {
+      "thread_count": 8,
+      "tps": 60.61,
+      "p99_latency_ms": 8011.99,
+      "mean_latency_ms": 4244.9,
+      "total_tasks": 500,
+      "elapsed_sec": 8.25
+    },
+    {
+      "thread_count": 16,
+      "tps": 60.71,
+      "p99_latency_ms": 7330.9,
+      "mean_latency_ms": 3944.29,
+      "total_tasks": 500,
+      "elapsed_sec": 8.24
+    },
+    {
+      "thread_count": 32,
+      "tps": 61.55,
+      "p99_latency_ms": 4347.1,
+      "mean_latency_ms": 3282.79,
+      "total_tasks": 500,
+      "elapsed_sec": 8.12
+    },
+    {
+      "thread_count": 64,
+      "tps": 59.27,
+      "p99_latency_ms": 8014.52,
+      "mean_latency_ms": 4162.54,
+      "total_tasks": 500,
+      "elapsed_sec": 8.44
+    },
+    {
+      "thread_count": 128,
+      "tps": 62.39,
+      "p99_latency_ms": 7249.69,
+      "mean_latency_ms": 3582.44,
+      "total_tasks": 500,
+      "elapsed_sec": 8.01
+    },
+    {
+      "thread_count": 256,
+      "tps": 62.39,
+      "p99_latency_ms": 7449.38,
+      "mean_latency_ms": 3784.33,
+      "total_tasks": 500,
+      "elapsed_sec": 8.01
+    },
+    {
+      "thread_count": 512,
+      "tps": 63.24,
+      "p99_latency_ms": 7627.81,
+      "mean_latency_ms": 3982.69,
+      "total_tasks": 500,
+      "elapsed_sec": 7.91
+    }
+  ],
+  "summary": {
+    "optimal_threads": 512,
+    "optimal_tps": 63.24,
+    "worst_threads": 128,
+    "worst_tps": 62.39,
+    "degradation_pct": 1.34
+  }
+}

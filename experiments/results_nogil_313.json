@@ -1,0 +1,91 @@
+{
+  "python_version": "3.13.3 experimental free-threading build (tags/v3.13.3:6280bb5, Apr  8 2025, 14:53:12) [MSC v.1943 64 bit (AMD64)]",
+  "gil_enabled": false,
+  "cpu_count": 24,
+  "config": {
+    "num_tasks": 500,
+    "cpu_ms": 10,
+    "io_ms": 50
+  },
+  "results": [
+    {
+      "thread_count": 1,
+      "tps": 15.82,
+      "p99_latency_ms": 31313.47,
+      "mean_latency_ms": 15865.55,
+      "total_tasks": 500,
+      "elapsed_sec": 31.61
+    },
+    {
+      "thread_count": 4,
+      "tps": 63.5,
+      "p99_latency_ms": 7806.46,
+      "mean_latency_ms": 3955.47,
+      "total_tasks": 500,
+      "elapsed_sec": 7.87
+    },
+    {
+      "thread_count": 8,
+      "tps": 125.97,
+      "p99_latency_ms": 3917.05,
+      "mean_latency_ms": 1998.27,
+      "total_tasks": 500,
+      "elapsed_sec": 3.97
+    },
+    {
+      "thread_count": 16,
+      "tps": 249.96,
+      "p99_latency_ms": 1958.6,
+      "mean_latency_ms": 1007.77,
+      "total_tasks": 500,
+      "elapsed_sec": 2.0
+    },
+    {
+      "thread_count": 32,
+      "tps": 498.85,
+      "p99_latency_ms": 982.96,
+      "mean_latency_ms": 510.51,
+      "total_tasks": 500,
+      "elapsed_sec": 1.0
+    },
+    {
+      "thread_count": 64,
+      "tps": 920.41,
+      "p99_latency_ms": 497.17,
+      "mean_latency_ms": 257.9,
+      "total_tasks": 500,
+      "elapsed_sec": 0.54
+    },
+    {
+      "thread_count": 128,
+      "tps": 1271.92,
+      "p99_latency_ms": 305.52,
+      "mean_latency_ms": 168.46,
+      "total_tasks": 500,
+      "elapsed_sec": 0.39
+    },
+    {
+      "thread_count": 256,
+      "tps": 1247.61,
+      "p99_latency_ms": 304.75,
+      "mean_latency_ms": 169.59,
+      "total_tasks": 500,
+      "elapsed_sec": 0.4
+    },
+    {
+      "thread_count": 512,
+      "tps": 1221.34,
+      "p99_latency_ms": 323.2,
+      "mean_latency_ms": 175.32,
+      "total_tasks": 500,
+      "elapsed_sec": 0.41
+    }
+  ],
+  "summary": {
+    "optimal_threads": 128,
+    "optimal_tps": 1271.92,
+    "worst_threads": 512,
+    "worst_tps": 1221.34,
+    "degradation_pct": 3.98
+  }
+}

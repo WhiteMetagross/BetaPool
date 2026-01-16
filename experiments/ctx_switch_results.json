@@ -1,0 +1,85 @@
+{
+  "python_version": "3.11.13 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 13:03:15) [MSC v.1929 64 bit (AMD64)]",
+  "platform": "win32",
+  "results": [
+    {
+      "threads": 4,
+      "tps": 60.7,
+      "completed_tasks": 929,
+      "total_ctx_switches": 3086,
+      "ctx_switches_per_task": 3.32,
+      "voluntary": 3086,
+      "nonvoluntary": 0
+    },
+    {
+      "threads": 8,
+      "tps": 62.5,
+      "completed_tasks": 961,
+      "total_ctx_switches": 565,
+      "ctx_switches_per_task": 0.59,
+      "voluntary": 565,
+      "nonvoluntary": 0
+    },
+    {
+      "threads": 16,
+      "tps": 62.7,
+      "completed_tasks": 993,
+      "total_ctx_switches": 352,
+      "ctx_switches_per_task": 0.35,
+      "voluntary": 352,
+      "nonvoluntary": 0
+    },
+    {
+      "threads": 32,
+      "tps": 62.4,
+      "completed_tasks": 993,
+      "total_ctx_switches": 356,
+      "ctx_switches_per_task": 0.36,
+      "voluntary": 356,
+      "nonvoluntary": 0
+    },
+    {
+      "threads": 64,
+      "tps": 62.7,
+      "completed_tasks": 1089,
+      "total_ctx_switches": 412,
+      "ctx_switches_per_task": 0.38,
+      "voluntary": 412,
+      "nonvoluntary": 0
+    },
+    {
+      "threads": 128,
+      "tps": 61.9,
+      "completed_tasks": 942,
+      "total_ctx_switches": 260,
+      "ctx_switches_per_task": 0.28,
+      "voluntary": 260,
+      "nonvoluntary": 0
+    },
+    {
+      "threads": 256,
+      "tps": 62.7,
+      "completed_tasks": 976,
+      "total_ctx_switches": 276,
+      "ctx_switches_per_task": 0.28,
+      "voluntary": 276,
+      "nonvoluntary": 0
+    },
+    {
+      "threads": 512,
+      "tps": 62.8,
+      "completed_tasks": 954,
+      "total_ctx_switches": 263,
+      "ctx_switches_per_task": 0.28,
+      "voluntary": 263,
+      "nonvoluntary": 0
+    }
+  ],
+  "analysis": {
+    "optimal_threads": 16,
+    "optimal_ctx_per_task": 0.35,
+    "overprovisioned_threads": 512,
+    "overprovisioned_ctx_per_task": 0.28,
+    "overhead_ratio": 0.8
+  }
+}
