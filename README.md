@@ -1,26 +1,26 @@
 # BetaPool
 
-A GIL-aware adaptive thread pool for Python that prevents concurrency thrashing.
+A Python library implementing the Metric-Driven Adaptive Thread Pool for mitigating GIL bottlenecks in mixed I/O and CPU workloads.
 
 **Author:** Mridankan Mandal  
 **License:** MIT  
-**Paper:** [arXiv:2601.10582](https://arxiv.org/abs/2601.10582)
+**Python:** 3.11+
 
 ## Overview:
 
-Standard thread pool heuristics fail to detect GIL-specific contention, leading to **concurrency thrashing**: a pathological state where increasing thread count paradoxically degrades throughput. Research shows up to 32.2% throughput loss when naively scaling threads on CPU-bound Python workloads.
-
-BetaPool solves this with the **Blocking Ratio (beta)** metric and a **GIL Safety Veto** mechanism that automatically prevents harmful thread scaling.
+Standard thread pool implementations fail to detect GIL-specific contention in Python, leading to **concurrency thrashing** where increasing thread count paradoxically degrades throughput. BetaPool solves this by implementing a **GIL Safety Veto** mechanism using the **Blocking Ratio (beta)** metric to automatically maintain optimal concurrency levels.
 
 ## Why BetaPool:
 
-| Metric | Static (256 threads) | Static Optimal (32) | BetaPool Adaptive |
-|--------|---------------------|---------------------|-------------------|
-| Throughput | 31,087 TPS | 37,437 TPS | 36,142 TPS |
-| P99 Latency | 38.2 ms | 10.1 ms | 11.8 ms |
-| vs Naive | Baseline | +20% | +16% |
+Research demonstrates that naive thread scaling causes significant performance degradation:
 
-BetaPool achieves **96.5% of optimal performance** without requiring manual tuning.
+| Configuration | Peak Throughput | Degradation at High Threads |
+|---------------|-----------------|----------------------------|
+| Single-core | 37,437 TPS at 32 threads | 32.2% loss at 2048 threads |
+| Quad-core | 68,742 TPS at 64 threads | 33.3% loss at 2048 threads |
+| **BetaPool** | 36,142 TPS | **96.5% of optimal** (automatic) |
+
+BetaPool achieves near-optimal performance without manual tuning by detecting when thread scaling would cause GIL contention.
 
 ## Installation:
 
@@ -28,9 +28,13 @@ BetaPool achieves **96.5% of optimal performance** without requiring manual tuni
 pip install -e .
 ```
 
-Requirements:
-- Python 3.11 or higher.
-- psutil >= 5.9.0.
+With optional dependencies:
+
+```bash
+pip install -e ".[dev]"      # Development tools.
+pip install -e ".[numpy]"    # NumPy workload generators.
+pip install -e ".[all]"      # All dependencies.
+```
 
 ## Quick Start:
 
@@ -42,46 +46,77 @@ with AdaptiveThreadPoolExecutor(min_workers=4, max_workers=64) as executor:
     futures = [executor.submit(my_task, arg) for arg in args]
     results = [f.result() for f in futures]
 
-    # Monitor the adaptive behavior.
+    # Monitor adaptive behavior.
     metrics = executor.get_metrics()
     print(f"Current threads: {metrics['current_threads']}")
     print(f"Blocking ratio: {metrics['avg_blocking_ratio']:.2f}")
 ```
 
-## The Blocking Ratio (Beta):
+## The Blocking Ratio:
 
-The core innovation is the **Blocking Ratio** metric:
+The core algorithm uses the **Blocking Ratio** metric:
 
 ```
 beta = 1 - (cpu_time / wall_time)
 ```
 
-- **beta near 1.0:** Thread is mostly waiting (I/O-bound) - safe to add more threads.
-- **beta near 0.0:** Thread is mostly computing (CPU-bound) - adding threads causes GIL contention.
+- **beta near 1.0:** Thread is mostly waiting (I/O-bound). Safe to add threads.
+- **beta near 0.0:** Thread is mostly computing (CPU-bound). Adding threads causes GIL contention.
 
 ## The GIL Safety Veto:
 
-When the blocking ratio indicates CPU-bound work (beta < 0.3), the controller implements a **veto** on thread pool expansion:
+When beta falls below the danger threshold (default 0.3), the controller vetoes thread pool expansion:
 
 ```
-if queue_length > 0:           # There is work waiting.
-    if beta > GIL_DANGER_ZONE: # Workers are doing I/O.
-        scale_up()             # Safe to add threads.
-    else:
-        hold()                 # VETO: Adding threads would cause thrashing.
+if beta > threshold:    # I/O-bound work.
+    scale_up()          # Safe to add threads.
+else:
+    hold()              # VETO: Prevents GIL thrashing.
 ```
 
-This prevents the 32% throughput degradation observed when scaling threads on CPU-bound workloads.
+This mechanism prevents the 32% throughput loss observed with naive thread scaling.
 
 ## API Reference:
 
-See [betapool/README.md](betapool/README.md) for complete API documentation.
+**AdaptiveThreadPoolExecutor:**
+
+```python
+from betapool import AdaptiveThreadPoolExecutor, ControllerConfig
+
+config = ControllerConfig(
+    monitor_interval_sec=0.5,    # Metric check interval.
+    beta_high_threshold=0.7,     # Scale up threshold.
+    beta_low_threshold=0.3,      # GIL danger zone.
+    scale_up_step=2,             # Threads to add.
+    scale_down_step=1,           # Threads to remove.
+)
+
+with AdaptiveThreadPoolExecutor(
+    min_workers=4,
+    max_workers=64,
+    config=config
+) as executor:
+    future = executor.submit(task_function, arg1, arg2)
+    result = future.result()
+```
+
+**Methods:**
+
+- `submit(fn, *args, **kwargs) -> Future`: Submit a task for execution.
+- `map(fn, *iterables, timeout=None) -> Iterator`: Map function over iterables.
+- `get_current_thread_count() -> int`: Get current active thread count.
+- `get_metrics() -> Dict`: Get current metrics summary.
+- `shutdown(wait=True)`: Shutdown the executor.
 
 ## Testing:
 
 ```bash
 pytest betapool/tests/ -v
 ```
+
+## Research Paper:
+
+**Read the full paper:** [Mitigating GIL Bottlenecks in Edge AI Systems (arXiv:2601.10582)](https://arxiv.org/pdf/2601.10582)
 
 ## Citation:
 

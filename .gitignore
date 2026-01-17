@@ -39,10 +39,6 @@ coverage.xml
 Thumbs.db
 Desktop.ini
 
-# Large model files (optional - uncomment if needed)
-# *.onnx
-# *.tflite
-
 # Temporary files
 *.tmp
 *.bak
