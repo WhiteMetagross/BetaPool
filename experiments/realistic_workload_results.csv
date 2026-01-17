@@ -1,7 +1,0 @@
-workload,measured_beta,std_beta,optimal_n,adaptive_n,optimal_tps,adaptive_tps,efficiency,p99_latency_ms,veto_events
-Vision Pipeline,0.6866,0.0927,64,58,266.3,257.5,96.68,261.97,3
-Voice Assistant,0.5054,0.0840,96,72,47.5,35.2,74.21,2882.39,12
-Sensor Fusion,0.8930,0.2476,64,60,1020.7,988.1,96.81,115.22,2
-RAG Orchestration,0.9372,0.1353,128,124,540.0,503.8,93.29,1955.05,2
-Tiny LLM,0.2082,0.0659,64,24,21.3,14.9,69.73,2631.17,20
-Edge Analytics,0.7988,0.2116,128,96,126.2,115.1,91.25,1141.22,16
