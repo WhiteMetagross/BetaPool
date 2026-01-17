@@ -15,6 +15,8 @@ to distinguish between I/O-bound and CPU-bound workloads:
 Author: Mridankan Mandal
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
 from collections import deque

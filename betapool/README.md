@@ -1,10 +1,10 @@
-# BetaPool
+# BetaPool:
 
 A Python library implementing the Metric-Driven Adaptive Thread Pool for mitigating GIL bottlenecks in mixed I/O and CPU workloads.
 
 **Author:** Mridankan Mandal  
 **License:** MIT  
-**Python:** 3.11+
+**Python:** 3.8+
 
 ## Overview:
 
@@ -196,7 +196,7 @@ mixed_task = WorkloadGenerator.mixed_task(
 
 ## Requirements:
 
-- Python 3.11 or higher.
+- Python 3.8 or higher.
 - psutil >= 5.9.0.
 
 Optional dependencies:

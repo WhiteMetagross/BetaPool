@@ -6,6 +6,8 @@ Validates correctness of core functionality and metrics collection.
 Author: Mridankan Mandal
 """
 
+from __future__ import annotations
+
 import unittest
 import time
 import math

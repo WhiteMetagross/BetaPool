@@ -13,6 +13,8 @@ When beta is low (< 0.3), threads are CPU-bound, adding more causes GIL contenti
 Author: Mridankan Mandal
 """
 
+from __future__ import annotations
+
 from concurrent.futures import ThreadPoolExecutor, Future
 from threading import Thread, Lock, Event
 from typing import Callable, Any, Optional, Dict, List, TypeVar, Iterator

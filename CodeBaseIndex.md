@@ -1,4 +1,4 @@
-# CodeBase Index
+# CodeBase Index:
 
 A comprehensive guide to the BetaPool library codebase structure and navigation.
 

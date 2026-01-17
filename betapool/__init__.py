@@ -30,6 +30,8 @@ Author: Mridankan Mandal
 License: MIT
 """
 
+from __future__ import annotations
+
 from betapool.executor import (
     AdaptiveThreadPoolExecutor,
     StaticThreadPoolExecutor,

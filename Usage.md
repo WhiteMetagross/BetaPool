@@ -1,4 +1,4 @@
-# Usage Guide
+# Usage Guide:
 
 Comprehensive usage instructions for the BetaPool library.
 

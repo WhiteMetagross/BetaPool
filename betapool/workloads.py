@@ -7,6 +7,8 @@ for controlled experimental evaluation of the adaptive executor.
 Author: Mridankan Mandal
 """
 
+from __future__ import annotations
+
 import time
 import random
 import math

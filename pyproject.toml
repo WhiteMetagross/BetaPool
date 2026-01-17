@@ -8,7 +8,7 @@ version = "1.0.0"
 description = "Adaptive Thread Pool for GIL-Aware Concurrency Control in Python"
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.11"
+requires-python = ">=3.8"
 authors = [
     {name = "Mridankan Mandal", email = "mridankan.mandal@example.com"}
 ]
@@ -36,6 +36,9 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -95,7 +98,7 @@ python_functions = ["test_*"]
 addopts = "-v --tb=short"
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.8"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -110,7 +113,7 @@ strict_equality = true
 
 [tool.black]
 line-length = 88
-target-version = ['py311']
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312', 'py313']
 include = '\.pyi?$'
 
 [tool.isort]
