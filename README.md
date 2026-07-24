@@ -2,9 +2,14 @@
 
 A Python library implementing the Metric-Driven Adaptive Thread Pool for mitigating GIL bottlenecks in mixed I/O and CPU workloads.
 
-**Author:** Mridankan Mandal  
-**License:** MIT  
+**Author:** Mridankan Mandal
+**License:** MIT
 **Python:** 3.8+
+
+## Package Links:
+
+- **PyPI package:** [betapool](https://pypi.org/project/betapool/).
+- **Installable library repository:** [RedZapdos123/BetaPool](https://github.com/RedZapdos123/BetaPool).
 
 ## Overview:
 
@@ -24,11 +29,19 @@ BetaPool achieves near-optimal performance without manual tuning by detecting wh
 
 ## Installation:
 
+From PyPI:
+
+```bash
+pip install betapool
+```
+
+For local development from this source checkout:
+
 ```bash
 pip install -e .
 ```
 
-With optional dependencies:
+With optional dependencies from a source checkout:
 
 ```bash
 pip install -e ".[dev]"      # Development tools.
